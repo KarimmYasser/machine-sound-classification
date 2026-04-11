@@ -1,0 +1,53 @@
+# Python cache and compiled artifacts
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Distribution / packaging
+build/
+dist/
+*.egg-info/
+.eggs/
+
+# Virtual environments
+.venv/
+venv/
+env/
+ENV/
+
+# Conda
+.conda/
+conda-meta/
+
+# Jupyter
+.ipynb_checkpoints/
+
+# Test and coverage artifacts
+.pytest_cache/
+.coverage
+.coverage.*
+htmlcov/
+
+# Type checker / linters
+.mypy_cache/
+.ruff_cache/
+.pyre/
+
+# IDE/editor
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Project outputs and logs
+outputs/
+*.log
+
+# Large/raw data (keep manifests and docs tracked)
+data/Machine 1/
+data/Machine 2/
+data/Machine 3/
