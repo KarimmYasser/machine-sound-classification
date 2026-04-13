@@ -51,3 +51,6 @@ outputs/
 data/Machine 1/
 data/Machine 2/
 data/Machine 3/
+
+# Legacy Dagshub template artifacts
+/models
