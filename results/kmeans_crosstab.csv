@@ -1,0 +1,7 @@
+fused_label,0,1,2,3,4,5
+Machine 1_Abnormal,210,12,6044,0,0,1234
+Machine 1_Normal,57,0,6179,0,0,1264
+Machine 2_Abnormal,657,6843,0,0,0,0
+Machine 2_Normal,664,6836,0,0,0,0
+Machine 3_Abnormal,0,147,6,5498,1849,0
+Machine 3_Normal,0,0,0,5665,1835,0

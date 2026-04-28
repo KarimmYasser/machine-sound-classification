@@ -48,9 +48,9 @@ outputs/
 *.log
 
 # Large/raw data (keep manifests and docs tracked)
-data/Machine 1/
-data/Machine 2/
-data/Machine 3/
+data/*
+![data/*.csv]
+
 
 # Legacy Dagshub template artifacts
 /models

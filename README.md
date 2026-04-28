@@ -12,7 +12,7 @@ The target task is 6-class prediction across machine ID and operating condition:
 
 This repository currently focuses on Phase 1: Exploratory Data Analysis (EDA) and visual inspection of raw audio.
 
-## Team [Team Number]
+## Team 2
 
 - Abdallah Ayman
 - Karim Yasser
@@ -87,6 +87,20 @@ Optional arguments:
 - `--n-mels` mel bins (default: `128`)
 - `--hop-length` hop length (default: `512`)
 - `--out-dir` output directory (default: `outputs/eda`)
+
+### 3) Run Full Training Pipeline
+
+To execute the complete end-to-end model training pipeline, which includes feature pruning, intra-class clustering, and XGBoost training with cross-validation:
+
+```bash
+python .\scripts\run_training_pipeline.py
+```
+
+This master script sequentially executes:
+1. `train_01_feature_engineering.py`: Prunes features to the top 40 and assigns clustering IDs to prevent data leakage.
+2. `train_02_model_training.py`: Splits the data securely, fits a `StandardScaler`, and trains a GPU-accelerated `XGBClassifier` via Grid Search.
+
+The best model, scaler, and label encoder are automatically saved to the `outputs/` directory.
 
 ## EDA Outputs
 

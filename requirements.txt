@@ -3,3 +3,13 @@ joblib
 notebook
 pandas
 scikit-learn
+torchaudio
+torch
+tqdm
+numpy
+tensorboard
+fastapi
+librosa
+pydantic
+soundfile
+matplotlib
