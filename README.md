@@ -88,19 +88,43 @@ Optional arguments:
 - `--hop-length` hop length (default: `512`)
 - `--out-dir` output directory (default: `outputs/eda`)
 
-### 3) Run Full Training Pipeline
+### 3) Prepare Unified Dataset
 
-To execute the complete end-to-end model training pipeline, which includes feature pruning, intra-class clustering, and XGBoost training with cross-validation:
+Before training, consolidate raw and augmented features into a single structured file to ensure lineage tracking and proper grouping:
 
 ```bash
+python .\scripts\create_unified_dataset.py
+```
+
+This generates `data/kaggle_unified_features.csv` which contains 4 versions of every recording: `raw`, `denoised`, `added_noise`, and `time_shifted`.
+
+### 4) Run Full Training Pipeline
+
+To execute the complete end-to-end model training pipeline:
+
+```bash
+# Run with full augmentations (default)
 python .\scripts\run_training_pipeline.py
+
+# Run without synthetic augmentations (only Raw + Denoised)
+python .\scripts\run_training_pipeline.py --no-augmentation
 ```
 
 This master script sequentially executes:
 1. `train_01_feature_engineering.py`: Prunes features to the top 40 and assigns clustering IDs to prevent data leakage.
-2. `train_02_model_training.py`: Splits the data securely, fits a `StandardScaler`, and trains a GPU-accelerated `XGBClassifier` via Grid Search.
+2. `train_02_model_training.py`: Splits the data securely using `GroupKFold`, fits a `StandardScaler`, and trains a GPU-accelerated `XGBClassifier`.
 
-The best model, scaler, and label encoder are automatically saved to the `outputs/` directory.
+The best model, scaler, and label encoder are saved to the `outputs/` directory.
+
+## Documentation Index
+
+Detailed technical documentation is available in the `docs/` folder:
+
+- **[01. Data Preprocessing & Augmentation](docs/01_Data_Preprocessing_and_Augmentation.md)**
+- **[02. Feature Engineering](docs/02_Feature_Engineering.md)**
+- **[06. Clustering & Overfitting Analysis](docs/06_Clustering_and_Overfitting_Analysis.md)**
+- **[07. Model Performance Report](docs/07_Model_Performance_Report.md)**
+- **[08. Unified Dataset Lineage](docs/08_Unified_Dataset_Lineage.md)**
 
 ## EDA Outputs
 

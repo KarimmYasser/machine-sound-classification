@@ -26,3 +26,10 @@ A tiny, randomized amount of Gaussian white noise (`noise_factor=0.005`) is inje
 ### 3.2. Time Shifting
 The audio array is randomly rolled horizontally (shifted left or right in time) by up to 20% of the sampling rate.
 - **Why it works:** Some machines have rhythmic operations (e.g., a pump firing every 1.5 seconds). Time shifting ensures the model does not memorize the *exact* timestamp a sound occurs, but rather learns to identify the sound regardless of its temporal placement in the recording.
+
+## 4. Unified Dataset Consolidation
+For production pipelines and lineage tracking, the raw and augmented features are merged into a single structured file.
+
+- **Unified File:** `data/kaggle_unified_features.csv`
+- **Lineage Tracking:** Each recording is represented by four versions (`raw`, `denoised`, `added_noise`, `time_shifted`).
+- **Detailed Reference:** See [08: Unified Dataset Lineage](08_Unified_Dataset_Lineage.md) for a full breakdown of the unified structure.

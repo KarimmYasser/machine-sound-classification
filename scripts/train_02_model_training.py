@@ -41,6 +41,7 @@ def main():
         cls_y = y_encoded[cls_idx]
         cls_groups = groups.iloc[cls_idx]
         
+        print(f"[DEBUG] Class: {cls}, Samples: {len(cls_idx)}, Groups: {cls_groups.nunique()}")
         tr, te = next(gss.split(cls_X, cls_y, groups=cls_groups))
         train_idx_list.extend(cls_idx[tr])
         test_idx_list.extend(cls_idx[te])
@@ -68,9 +69,9 @@ def main():
     xgb = XGBClassifier(objective='multi:softmax', eval_metric='mlogloss', random_state=42, tree_method='hist', device='cuda')
 
     param_grid = {
-    'n_estimators': [200, 500, 1000],
-    'max_depth': [3, 5, 7],
-    'learning_rate': [0.01, 0.05, 0.1]
+    'n_estimators': [100,200,500,1000],
+    'max_depth': [3,5,7],
+    'learning_rate': [0.01,0.05,0.1,0.2]
     }
 
     grid_search = GridSearchCV(xgb, param_grid, cv=gkf, scoring='f1_macro', n_jobs=1, verbose=3)
