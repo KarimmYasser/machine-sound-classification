@@ -1,0 +1,17 @@
+\chapter{Introduction}
+
+\section{Overview and Motivation}
+Acoustic monitoring provides a non-invasive, cost-effective method for predictive maintenance in industrial environments. By analyzing the sound emitted by rotating machinery (pumps, fans, and motors), it is possible to detect early-stage faults like bearing wear or imbalance before catastrophic failure occurs. This project develops an automated system to distinguish between "Normal" and "Abnormal" acoustic signatures across multiple machine types.
+
+\section{System Objectives}
+To deliver a production-ready solution, the system must address several technical constraints:
+\begin{itemize}
+    \item \textbf{Noise Robustness:} Handle varying industrial background noise levels.
+    \item \textbf{Data Foundations:} Standardizing and augmenting a dataset of 56,000+ recordings.
+    \item \textbf{Leakage Prevention:} Using clustering-aware validation to ensure generalization.
+    \item \textbf{Class Imbalance:} Handling datasets where "Normal" operation is heavily dominant.
+    \item \textbf{Model Benchmarking:} Optimizing both XGBoost and EfficientNet architectures.
+\end{itemize}
+
+\section{Scope and Context}
+The system addresses a 6-class classification problem covering the operational states of three distinct machines. The resulting pipeline serves as a blueprint for a real-time monitoring service capable of providing maintenance teams with instant anomaly alerts.

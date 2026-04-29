@@ -1,0 +1,53 @@
+\chapter{Data Preprocessing and Augmentation}
+
+\section{Data Ingestion Pipeline}
+The raw data is stored in a hierarchical directory structure corresponding to machine IDs and labels. To ensure a scalable pipeline, we implemented a centralized data creation script that traverses these directories and aggregates file paths and metadata into a unified registry.
+
+\subsection{Dual-Track Audio Standardization}
+Because our system relies on both tabular and deep learning architectures, we implemented two distinct standardization pipelines to serve their specific requirements:
+
+\textbf{Track A: Tabular Pipeline (XGBoost)}
+\begin{itemize}
+    \item \textbf{Sampling Rate:} Maintained at the native 48 kHz.
+    \item \textbf{Normalization:} Signals are peak-normalized to a maximum amplitude of 1.0 to prevent gross volume fluctuations from biasing the hand-crafted feature extraction.
+    \item \textbf{Pre-emphasis Filter:} Applied to enhance high-frequency components prior to MFCC extraction ($\alpha = 0.97$).
+\end{itemize}
+
+\textbf{Track B: Deep Learning Pipeline (EfficientNet)}
+\begin{itemize}
+    \item \textbf{Resampling:} Signals are downsampled to 16,000 Hz using \texttt{sinc\_interp\_hann}. This preserves the critical 0–8 kHz band required for mechanical fault detection while drastically reducing tensor memory footprint.
+    \item \textbf{Length Standardization:} Because Machine 1 and 2 exhibit critical anomalies at the very end of their 11.0s recordings, truncation is prohibited. All Machine 3 recordings (10.0s) are zero-padded to a uniform 11.0s (176,000 samples).
+    \item \textbf{Global Standardization (Crucial):} Exploratory data analysis proved that absolute RMS energy is a highly significant fault indicator ($p=0.0000$). Per-file instance normalization is therefore strictly prohibited. We calculate and apply the mean and standard deviation across the \textit{entire} training set globally to preserve these inter-file energy differences.
+\end{itemize}
+
+\section{Augmentation Techniques}
+Industrial anomalies are rare events. To train a deep neural network effectively, we must artificially expand the "Abnormal" data pool. We employed two primary augmentation strategies to increase dataset diversity by 3x.
+
+\subsection{Noise Injection and Gain Scaling}
+A factory floor is rarely silent, yet 86\% of the dataset consists of digital silence outside of active machine phases. To prevent the model from overfitting to this silence:
+\begin{itemize}
+    \item \textbf{Gaussian Noise:} Injected with an SNR of 15–40 dB to simulate varying microphone quality.
+    \item \textbf{Pink (1/f) Noise:} Injected at 25 dB SNR to simulate environmental rumble.
+    \item \textbf{Random Gain:} A scaling factor between 0.8 and 1.2 is applied to simulate recording volume variance.
+\end{itemize}
+
+\subsection{Phase-Aware Time Shifting}
+Mechanical faults often occur periodically, but specific machines (like M1 and M2) have faults strictly at the onset or shutdown phases. To augment data without destroying these temporal structures, we apply a constrained cyclic time shift: \textbf{max $\pm$0.5 s} for Normal recordings, and a much tighter \textbf{max $\pm$0.1 s} for Abnormal recordings.
+
+The final dataset lineage is tracked to ensure full reproducibility. As shown in the lineage records, the raw 56,236 unique recordings were expanded into a unified pool of 224,944 samples (4 variations per recording). This unified dataset serves as the "Gold Standard" for all subsequent feature engineering and modeling tasks.
+
+\begin{table}[H]
+    \centering
+    \caption{Unified Dataset Composition (Unique Recordings)}
+    \begin{tabular}{@{}lccc@{}}
+        \toprule
+        \textbf{Machine} & \textbf{Normal Samples} & \textbf{Abnormal Samples} & \textbf{Total} \\ \midrule
+        Machine 1 & 15,230 & 3,540 & 18,770 \\
+        Machine 2 & 15,310 & 3,620 & 18,930 \\
+        Machine 3 & 14,820 & 3,716 & 18,536 \\ \midrule
+        \textbf{Total (Unique)} & 45,360 & 10,876 & \textbf{56,236} \\ \bottomrule
+    \end{tabular}
+\end{table}
+
+\section{Leakage Prevention and Validation}
+To ensure the integrity of our results, we implemented an intra-class clustering strategy to prevent "Session Leakage." This ensures that correlated recordings from the same machine session are never split between training and test sets. A detailed analysis of this strategy and the discovery of unsupervised session groups is provided in \textbf{Chapter 5: Clustering and Overfitting Analysis}.

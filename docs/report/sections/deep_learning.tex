@@ -1,0 +1,105 @@
+\chapter{Deep Learning Architectures}
+
+\section{Transition to Deep Learning}
+While tabular models are efficient, they rely on hand-crafted features. Deep learning models can learn hierarchal representations directly from raw acoustic data (spectrograms), potentially capturing subtle anomalies that manual features might miss.
+
+\section{Architecture: ResNet-34 Convolutional Neural Network}
+Our primary deep learning experiment utilized a custom \textbf{ResNet-34} architecture. This model moves beyond the shallower ResNet-18 by employing a $(3, 4, 6, 3)$ residual block configuration, providing a deeper acoustic manifold for capturing complex mechanical signatures.
+
+\subsection{Regularization and Training Dynamics}
+To ensure robust generalization on the factory floor, we implemented a state-of-the-art regularization suite:
+\begin{itemize}
+    \item \textbf{SpecAugment:} We applied on-the-fly spectral masking, including Frequency Masking ($\nu=30$) and Time Masking ($\tau=80$). This prevents the model from overfitting to specific transient spectral artifacts.
+    \item \textbf{Mixup Augmentation:} In 30\% of training iterations, we employed Mixup ($\alpha=0.2$). This encourages the model to learn linear decision boundaries between acoustic classes, improving its performance on boundary-case anomalies.
+    \item \textbf{Label Smoothing:} We used a smoothing factor of $0.1$ in our Cross-Entropy loss to prevent overconfident predictions and improve calibration.
+    \item \textbf{Weight Decay:} A L2 penalty of $0.01$ and a Dropout layer ($p=0.5$) before the final classification head were used to constrain model complexity.
+\end{itemize}
+
+\section{Architectural Explainability (XAI)}
+A unique feature of our ResNet-34 implementation is its \textbf{Diagnostic Mode}. The model architecture is designed to return internal \textbf{Feature Maps} from every residual block during inference. By aggregating and visualizing these activations, engineers can see exactly which frequency bands or temporal impulses triggered an anomaly detection. This "Explainable AI" approach transforms the model from a black box into a transparent tool for root-cause analysis on the factory floor.
+
+\subsection{Experimental Iterations}
+We conducted several experimental runs with varying clip durations and dataset configurations to find the optimal training setup for the ResNet model.
+
+\begin{table}[H]
+    \centering
+    \caption{ResNet Performance across Experimental Runs}
+    \begin{tabular}{@{}lcccc@{}}
+        \toprule
+        \textbf{Run ID} & \textbf{Clip Duration} & \textbf{Dataset Source} & \textbf{Val Accuracy} & \textbf{Val F1-Score} \\ \midrule
+        Run 1 & 10.0s & Raw & 96.79\% & 0.9515 \\
+        Run 2 & 5.0s & Raw & 98.89\% & 0.9801 \\
+        Run 3 & 5.0s & Mel-NPY & 96.94\% & 0.9438 \\
+        Run 4 & 5.0s & Mel-NPY & 96.78\% & 0.9494 \\
+        Run 5 & \textbf{5.0s} & \textbf{Raw (Final)} & \textbf{99.57\%} & \textbf{0.9928} \\ \bottomrule
+    \end{tabular}
+\end{table}
+
+The final run (Run 5) demonstrated that using 5-second clips from the raw dataset provided the most robust representation for the ResNet backbone, likely due to the higher temporal resolution of the training windows.
+
+\section{The EfficientNet Model}
+To push the state-of-the-art in machine sound classification, we implemented the EfficientNet architecture. This model moves beyond static feature vectors by processing the full temporal and spectral context of the audio via a deep convolutional backbone and attention mechanism.
+
+\subsection{Architecture Deep Dive}
+EfficientNet is composed of several high-performance modules designed for efficient audio processing:
+
+\subsubsection{Component 1: Audio Frontend}
+The input to the model is a single-channel Mel-spectrogram. However, to provide the model with temporal motion context, we utilize an Audio Frontend that computes the first and second-order derivatives of the spectrogram:
+\begin{itemize}
+    \item \textbf{Static Mel-Spectrogram:} The base energy distribution across 128 Mel bands.
+    \item \textbf{Delta Features:} Captures the velocity of spectral changes over time.
+    \item \textbf{Delta-Delta Features:} Captures the acceleration of spectral changes.
+\end{itemize}
+These three components are stacked along the channel dimension, resulting in a $[B, 3, F, T]$ input tensor. This multi-channel representation is crucial as it allows the model to leverage patterns in spectral movement, which are often more indicative of mechanical wear than static snapshots.
+
+\subsubsection{Component 2: EfficientNet-B0 Backbone}
+We employ an \texttt{EfficientNet-B0} backbone, known for its optimal balance between parameter count and representational power. 
+\begin{itemize}
+    \item The model is loaded without its top classification head.
+    \item Global pooling is disabled to preserve the spatial feature map $[B, 1280, H, W]$.
+    \item A frequency-axis adaptive average pooling layer reduces the height to 1, effectively collapsing the spectral information into a high-dimensional temporal feature vector.
+\end{itemize}
+
+\subsubsection{Component 3: Temporal Attention (Transformer)}
+Machine faults are often transient, occurring in short bursts. To allow the model to focus on specific segments of the 10-second recording, we integrate a 2-layer Transformer encoder:
+\begin{itemize}
+    \item \textbf{Configuration:} The encoder utilizes 4 attention heads with a 128-dimensional embedding and a feed-forward dimension of 512.
+    \item \textbf{Function:} The attention mechanism computes weights for each time frame ($T=344$), allowing the model to "attend" to the specific impulse or harmonic shift that characterizes the fault while ignoring steady-state background noise.
+\end{itemize}
+
+\subsection{Regularization and Training Strategy}
+The training process utilized advanced regularization to ensure robust generalization:
+\begin{itemize}
+    \item \textbf{SpecAugment:} We applied \texttt{FrequencyMasking} (up to 15 bins) and \texttt{TimeMasking} (up to 35 frames) to force the model to learn features that are invariant to partial data loss.
+    \item \textbf{Optimization:} The \texttt{AdamW} optimizer was used with a weight decay of 0.01.
+    \item \textbf{Scheduling:} A \texttt{OneCycleLR} scheduler was implemented, which linearly warms up the learning rate for the first 30\% of training before annealing, preventing the model from getting stuck in sharp local minima early on.
+\end{itemize}
+
+\begin{figure}[H]
+    \centering
+    \begin{tikzpicture}[
+      node distance=0.4cm and 0.2cm,
+      block/.style={rectangle, rounded corners=2pt, draw=primary, fill=primary!5,
+                    text width=3.2cm, align=center, font=\small, minimum height=0.9cm},
+      arr/.style={-{Latex[length=3mm]}, thick, color=accent}
+    ]
+    \node[block] (in) {Input\\{[B, 1, 128, 344]}};
+    \node[block, right=0.5cm of in] (fe) {AudioFrontend\\{[B, 3, 128, 344]}};
+    \node[block, right=0.5cm of fe] (eff) {EfficientNet-B0\\{[B, 1280, H, W]}};
+    \node[block, right=0.5cm of eff] (pool) {Height Pool\\{[B, 1280, W]}};
+    \node[block, below=0.5cm of pool] (proj) {Conv1D Proj\\{[B, 128, W]}};
+    \node[block, left=0.5cm of proj] (attn) {Transformer\\{[B, 128, W]}};
+    \node[block, left=0.5cm of attn] (head) {Head\\{[B, 6]}};
+    
+    \draw[arr] (in) -- (fe);
+    \draw[arr] (fe) -- (eff);
+    \draw[arr] (eff) -- (pool);
+    \draw[arr] (pool) -- (proj);
+    \draw[arr] (proj) -- (attn);
+    \draw[arr] (attn) -- (head);
+    \end{tikzpicture}
+    \caption{EfficientNet Model Architecture: From Spectrogram to Temporal Attention}
+    \label{fig:effat_arch}
+\end{figure}
+
+% End of Deep Learning Architectures

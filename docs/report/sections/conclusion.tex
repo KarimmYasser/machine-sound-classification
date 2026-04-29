@@ -1,0 +1,22 @@
+\chapter{Conclusion and Future Work}
+
+\section{Project Summary}
+This project successfully architected and implemented a high-performance acoustic anomaly detection system. By moving from simple spectral analysis to a sophisticated dual-model pipeline, we provided a solution that is both accurate and deployable. 
+
+Key achievements include:
+\begin{itemize}
+    \item Extraction of a 104-feature acoustic manifold.
+    \item Elimination of data leakage through intra-class clustering and GroupKFold cross-validation.
+    \item Benchmarking of XGBoost (F1: 0.92) and EfficientNet (F1: 0.99) architectures.
+    \item Development of a FastAPI-based production inference service.
+\end{itemize}
+
+\section{Key Takeaways}
+The most significant lesson from this project was the impact of non-sequential data leakage. Without the session-aware clustering logic, we would have deployed a model with 99\% accuracy that would have failed immediately in a real factory setting. The "Run 4" baseline of 0.9234 F1-score is our true measure of success, representing robust generalization.
+
+\section{Future Work}
+\begin{itemize}
+    \item \textbf{Isolation Forest Integration:} Implementing an unsupervised anomaly detection layer (e.g., Isolation Forest) to detect novel faults that were not present in the training set.
+    \item \textbf{Semi-Supervised Learning:} Leveraging the large pool of unlabeled "Normal" operational data to improve the feature extractor's representation through self-supervised pre-training.
+    \item \textbf{Hardware Acceleration:} Compiling the XGBoost model to ONNX or using TensorRT for the EfficientNet model to further reduce inference latency on edge devices.
+\end{itemize}

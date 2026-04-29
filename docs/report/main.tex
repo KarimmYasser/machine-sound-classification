@@ -1,0 +1,129 @@
+\documentclass[10pt,a4paper,oneside]{extbook}
+
+% -- Packages ------------------------------------------------------
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage[english]{babel}
+\usepackage{geometry}
+\geometry{margin=1in}
+\usepackage{amsmath, amsfonts, amssymb}
+\usepackage{graphicx}
+\usepackage{xcolor}
+\usepackage{hyperref}
+\usepackage{booktabs}
+\usepackage{caption}
+\usepackage{subcaption}
+\usepackage{float}
+\usepackage{listings}
+\usepackage{tcolorbox}
+\tcbuselibrary{skins, breakable}
+\usepackage{titlesec}
+\usepackage{fancyhdr}
+\usepackage{cite}
+\usepackage{setspace}
+\usepackage{tikz}
+\usetikzlibrary{shapes.geometric, arrows.meta, fit, positioning, backgrounds}
+\usepackage{mdframed}
+
+
+% -- Formatting ---------------------------------------------------
+\onehalfspacing
+\definecolor{primary}{RGB}{31, 78, 121}
+\definecolor{accent}{RGB}{0, 147, 221}
+
+\titleformat{\chapter}[hang]
+  {\normalfont\huge\bfseries\color{primary}}{\thechapter}{0.5em}{}
+\titlespacing*{\chapter}{0pt}{-10pt}{15pt}
+\titleformat{\section}
+  {\normalfont\Large\bfseries\color{accent}}{\thesection}{1em}{}
+
+\pagestyle{fancy}
+\setlength{\headheight}{14.5pt}
+\addtolength{\topmargin}{-2.5pt}
+\fancyhf{}
+\fancyhead[L]{\small\color{gray}Acoustic Anomaly Detection Project}
+\fancyhead[R]{\small\color{gray}\thepage}
+\fancyfoot[C]{\small\color{gray}Machine Sound Classification Technical Report}
+
+\hypersetup{
+    colorlinks=true,
+    linkcolor=primary,
+    urlcolor=accent,
+    citecolor=green
+}
+
+% -- Document Start ------------------------------------------------
+\begin{document}
+
+\begin{titlepage}
+\begin{center}
+  \begin{minipage}{2.5cm}
+    \begin{center}
+      \includegraphics[height=2.5cm]{figures/cairouni.pdf}
+    \end{center}
+  \end{minipage}\hfill
+  \begin{minipage}{10cm}
+    \begin{center}
+      \textbf{\large CAIRO UNIVERSITY}\\[0.1cm]
+      \textbf{\large FACULTY OF ENGINEERING}\\[0.1cm]
+      \textbf{COMPUTER DEPARTMENT}
+    \end{center}
+  \end{minipage}\hfill
+  \begin{minipage}{2.5cm}
+    \begin{center}
+      \includegraphics[height=2.5cm]{figures/cairoeng.pdf}
+    \end{center}
+  \end{minipage}
+
+  \vspace{2.5cm}
+  {\Huge\bfseries\color{primary} Machine Fault Recognition}\\[0.5cm]
+  {\Large\bfseries Machine Listener System}\\[0.5cm]
+  \rule{\linewidth}{0.3mm} \\[1cm]
+
+  {\large \textbf{Course: Pattern Recognition and Neural Networks}}\\[2cm]
+
+  \begin{center}
+\renewcommand{\arraystretch}{1.2}
+\begin{tabular}{|l|c|l|}
+\hline
+\textbf{Name} & \textbf{ID} & \textbf{Email} \\
+\hline
+Abdallah Ayman Abdelrahman& 9230517 & abdallah.mohamed03@eng-st.cu.edu.eg \\
+Karim Yasser Ali & 9230676 & kareem.azab03@eng-st.cu.edu.eg \\
+Mohamed Ahmed Bahgat & 9230731 & mohammad.bahgat03@eng-st.cu.edu.eg \\
+Mohamed Abdelaziem Sayed & 9230784 & mohamed.bakry04@eng-st.cu.edu.eg \\
+\hline
+\end{tabular}
+\end{center}
+
+  \vfill
+  {\textbf{\large Spring Semester 2026}}
+\end{center}
+\end{titlepage}
+
+\frontmatter
+\tableofcontents
+
+\chapter*{Abstract}
+\addcontentsline{toc}{chapter}{Abstract}
+This report provides an in-depth exploration of a robust machine sound classification system designed for industrial acoustic monitoring. Over the course of the project, we developed a sophisticated dual-model pipeline capable of detecting anomalies across multiple machine types with high precision. By addressing critical challenges such as non-sequential data leakage and class imbalance, we achieved a production-ready solution. The methodology spans from raw audio processing to state-of-the-art EfficientNet models, providing a comprehensive blueprint for industrial predictive maintenance.
+
+\mainmatter
+
+% -- Modular Sections ----------------------------------------------
+\include{sections/introduction}
+\include{sections/data_preprocessing}
+\include{sections/eda}
+\include{sections/feature_engineering}
+\include{sections/clustering_analysis}
+\include{sections/benchmarking}
+\include{sections/deep_learning}
+\include{sections/optimization}
+\include{sections/productionization}
+\include{sections/conclusion}
+
+\backmatter
+% \bibliographystyle{plain}
+% \bibliography{references}
+
+\end{document}

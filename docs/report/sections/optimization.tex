@@ -1,0 +1,40 @@
+\chapter{Model Optimization and Tuning}
+
+\section{Hyperparameter Tuning}
+For our XGBoost champion model, we employed a Bayesian optimization approach to navigate the high-dimensional parameter space. This allowed us to find the optimal balance between model complexity and generalization.
+
+\subsection{Key Parameters}
+\begin{itemize}
+    \item \textbf{Max Depth:} We found that a depth of 3 was optimal. Higher depths led to overfitting on spectral noise, while lower depths underfitted the complex harmonic patterns of the machinery.
+    \item \textbf{Subsample and Colsample\_bytree:} Setting these to 0.8 improved robustness by introducing randomness into the tree-building process, effectively acting as a form of regularization.
+\end{itemize}
+
+\section{Cross-Validation Strategy}
+As discussed in the clustering section, we used \texttt{GroupKFold} for the tabular model and \texttt{GroupShuffleSplit} for the deep learning model. This provided a reliable estimate of the model's performance on completely unseen machinery sessions. 
+
+\subsection{Leakage Verification}
+To ensure the absolute integrity of our performance metrics, we implemented a strict disjointness assertion during the data split phase. By extracting the set of Cluster IDs for the training, validation, and test sets, we verified that:
+\begin{itemize}
+    \item $C_{train} \cap C_{val} = \emptyset$
+    \item $C_{train} \cap C_{test} = \emptyset$
+    \item $C_{val} \cap C_{test} = \emptyset$
+\end{itemize}
+This mathematical guarantee ensures that the high performance of the EfficientNet model (99.37\% F1) is a result of true acoustic pattern recognition rather than session memorization. The stability of the F1-score across folds (standard deviation < 0.02) further validates the model's consistency.
+
+\section{Class Weight Calibration}
+Given the 5:1 class imbalance, we utilized the \texttt{compute\_sample\_weight} function from \texttt{scikit-learn} with the \texttt{'balanced'} heuristic. By calculating weights inversely proportional to class frequencies, we ensured that the model penalizes misclassifications of the rare "Abnormal" states as heavily as the frequent "Normal" states. This approach significantly improved the Macro F1-score and prevented the model from developing a majority-class bias.
+
+\section{Hardware Acceleration and Training Efficiency}
+To facilitate rapid experimentation, we leveraged GPU acceleration for both the XGBoost and EfficientNet pipelines. By utilizing the \texttt{tree\_method='hist'} and \texttt{device='cuda'} configurations in XGBoost, we reduced the training time for a 1000-estimator model from minutes to seconds.
+
+\subsection{Solving the CPU Bottleneck}
+During initial deep learning experiments, we identified a significant performance bottleneck. The CPU was responsible for loading raw \texttt{.wav} files and computing 128-band Mel-spectrograms on-the-fly, leaving NVIDIA GPUs idling for 60-70\% of the time.
+
+\subsection{Mel-NPY Conversion Strategy}
+To saturate the GPUs and reduce training time from hours to minutes, we implemented a pre-caching strategy:
+\begin{enumerate}
+    \item \textbf{Offline Preprocessing:} A dedicated script traversed the dataset and precomputed all spectral tensors.
+    \item \textbf{Binary Serialization:} Results were saved as binary \texttt{.npy} files.
+    \item \textbf{Data Ingestion:} The training loop was updated to load these tensors directly, eliminating FFT overhead.
+\end{enumerate}
+This optimization resulted in a \textbf{4x speedup} in training throughput and maintained GPU utilization above 95\%.
