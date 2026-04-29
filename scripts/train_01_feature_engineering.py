@@ -81,6 +81,12 @@ def main():
     out_cols = top_40_features + ['fused_label', 'leakage_group_id']
     print(f"Saving processed features to {output_csv}...")
     df[out_cols].to_csv(output_csv, index=False)
+    
+    # Save the feature list for production inference
+    import joblib
+    os.makedirs('outputs', exist_ok=True)
+    joblib.dump(top_40_features, os.path.join('outputs', 'top_40_features.pkl'))
+    print(f"Saved top 40 feature list to outputs/top_40_features.pkl")
     print("Feature engineering completed successfully.")
 
 if __name__ == "__main__":

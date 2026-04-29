@@ -54,3 +54,18 @@ data/*
 
 # Legacy Dagshub template artifacts
 /models
+
+# LaTeX
+*.aux
+*.fdb_latexmk
+*.fls
+*.gz
+*.pdf
+*.toc
+*.out
+*.lof
+*.lot
+*.bbl
+*.blg
+*.log
+docs/report/svg-inkscape/

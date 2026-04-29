@@ -13,17 +13,18 @@ from audio_preprocessing import denoise_audio, normalize_audio, extract_advanced
 app = FastAPI(title="Acoustic Anomaly Detection API")
 
 # --- Load Production Assets on Startup ---
+# Note: These paths assume you are running from the project root or have moved assets to the app directory.
 try:
-    print("Loading production models and scalers...")
+    print("Loading production models and scalers from outputs/...")
     model = XGBClassifier()
-    model.load_model('champion_xgboost.json')
+    model.load_model('outputs/best_xgb_model.json')
     
-    scaler = joblib.load('scaler.joblib')
-    label_encoder = joblib.load('label_encoder.joblib')
-    top_40_features = joblib.load('top_40_features.joblib')
+    scaler = joblib.load('outputs/scaler.pkl')
+    label_encoder = joblib.load('outputs/label_encoder.pkl')
+    top_40_features = joblib.load('outputs/top_40_features.pkl')
     print("Assets loaded successfully.")
 except Exception as e:
-    print("Warning: Production assets not found. Ensure you run xgboost_optimization.py first.")
+    print(f"Warning: Production assets not found ({e}). Ensure you run run_training_pipeline.py first.")
 
 @app.post("/predict")
 async def predict_audio(file: UploadFile = File(...)):
@@ -52,13 +53,12 @@ async def predict_audio(file: UploadFile = File(...)):
         if not raw_features:
             raise HTTPException(status_code=500, detail="Feature extraction failed due to corrupted audio.")
             
-        # 4. Prune to the Top 40 Optimized Features
-        # Creating a single-row DataFrame ensuring columns match the exact order expected by the scaler
+        # 4. Prune and Align Features
         df_features = pd.DataFrame([raw_features])
-        X_pruned = df_features[top_40_features].fillna(0)
+        X_final = df_features[top_40_features].fillna(0)
         
         # 5. Scale Features
-        X_scaled = scaler.transform(X_pruned)
+        X_scaled = scaler.transform(X_final)
         
         # 6. Predict using XGBoost
         pred_idx = model.predict(X_scaled)[0]

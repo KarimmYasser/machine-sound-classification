@@ -3,11 +3,13 @@ import numpy as np
 import warnings
 from sklearn.preprocessing import StandardScaler, LabelEncoder
 from sklearn.model_selection import GroupShuffleSplit, GroupKFold, GridSearchCV
-from sklearn.metrics import classification_report, f1_score
+import joblib
+import matplotlib.pyplot as plt
+import seaborn as sns
+import os
+from sklearn.metrics import classification_report, f1_score, confusion_matrix
 from sklearn.utils.class_weight import compute_sample_weight
 from xgboost import XGBClassifier
-import os
-import joblib
 
 def main():
     input_csv = os.path.join('data', 'processed_features.csv')
@@ -69,9 +71,9 @@ def main():
     xgb = XGBClassifier(objective='multi:softmax', eval_metric='mlogloss', random_state=42, tree_method='hist', device='cuda')
 
     param_grid = {
-    'n_estimators': [100,200,500,1000],
-    'max_depth': [3,5,7],
-    'learning_rate': [0.01,0.05,0.1,0.2]
+    'n_estimators': [500,1000],
+    'max_depth': [3,5],
+    'learning_rate': [0.1,0.2]
     }
 
     grid_search = GridSearchCV(xgb, param_grid, cv=gkf, scoring='f1_macro', n_jobs=1, verbose=3)
@@ -96,6 +98,21 @@ def main():
     target_names = [str(cls) for cls in le.classes_]
     print(classification_report(y_test, preds, target_names=target_names, zero_division=0.0))
     
+    # 4. Confusion Matrix Generation
+    cm = confusion_matrix(y_test, preds)
+    plt.figure(figsize=(12, 10))
+    sns.heatmap(cm, annot=True, fmt='d', cmap='Blues', 
+                xticklabels=target_names, yticklabels=target_names)
+    plt.title(f'Confusion Matrix (Macro F1: {macro_f1:.4f})')
+    plt.ylabel('Actual Label')
+    plt.xlabel('Predicted Label')
+    plt.xticks(rotation=45, ha='right')
+    plt.tight_layout()
+    
+    cm_path = os.path.join('outputs', 'confusion_matrix.png')
+    plt.savefig(cm_path)
+    print(f"Confusion matrix saved to {cm_path}")
+
     # Optional: Save the best model and scaler to the outputs directory
     os.makedirs('outputs', exist_ok=True)
     best_xgb.save_model(os.path.join('outputs', 'best_xgb_model.json'))
