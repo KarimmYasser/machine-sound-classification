@@ -19,6 +19,9 @@ ENV/
 .conda/
 conda-meta/
 
+# Rust
+**/target/
+
 # Jupyter
 .ipynb_checkpoints/
 
@@ -43,8 +46,11 @@ htmlcov/
 .DS_Store
 Thumbs.db
 
-# Project outputs and logs
+# Project outputs, results, and logs
 outputs/
+results/
+visualizations/
+metrics/
 *.log
 
 # Large/raw data (keep manifests and docs tracked)
@@ -68,4 +74,12 @@ data/*
 *.bbl
 *.blg
 *.log
+*.bcf
+*.run.xml
+*.synctex.gz
 docs/report/svg-inkscape/
+
+# Environment variables and secrets
+.env
+.env.*
+*.secret

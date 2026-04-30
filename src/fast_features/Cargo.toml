@@ -1,0 +1,21 @@
+[package]
+name = "fast_features"
+version = "0.1.0"
+edition = "2021"
+
+[lib]
+name = "fast_features"
+crate-type = ["cdylib"]
+
+[dependencies]
+# Upgraded to 0.22 for Python 3.13 support
+pyo3 = { version = "0.22", features = ["extension-module"] }
+numpy = "0.22"
+rayon = "1.8"
+
+# spectrograms: pure Rust DSP (no python feature = no pyo3 version conflict)
+spectrograms = { version = "1.4.0", default-features = false, features = ["realfft", "rayon"] }
+non-empty-slice = "0.5"
+ndarray = ">=0.17"
+rustfft = "6"
+num-complex = "0.4"

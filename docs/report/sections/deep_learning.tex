@@ -37,69 +37,116 @@ We conducted several experimental runs with varying clip durations and dataset c
 
 The final run (Run 5) demonstrated that using 5-second clips from the raw dataset provided the most robust representation for the ResNet backbone, likely due to the higher temporal resolution of the training windows.
 
-\section{The EfficientNet Model}
-To push the state-of-the-art in machine sound classification, we implemented the EfficientNet architecture. This model moves beyond static feature vectors by processing the full temporal and spectral context of the audio via a deep convolutional backbone and attention mechanism.
+\section{EfficientAT: Advanced Machine Fault Classification}
+To push the state-of-the-art in machine sound classification, we developed \textbf{EfficientAT} (EfficientNet + Audio Frontend + Temporal Attention). This model moves beyond fixed feature extraction by integrating a differentiable audio processing pipeline directly into the neural network, allowing for end-to-end classification from raw \texttt{.wav} audio.
 
-\subsection{Architecture Deep Dive}
-EfficientNet is composed of several high-performance modules designed for efficient audio processing:
+\subsection{Architectural Components}
+EfficientAT is composed of three sequential stages designed to capture spectral, spatial, and temporal features:
 
-\subsubsection{Component 1: Audio Frontend}
-The input to the model is a single-channel Mel-spectrogram. However, to provide the model with temporal motion context, we utilize an Audio Frontend that computes the first and second-order derivatives of the spectrogram:
+\subsubsection{Component 1: Differentiable Audio Frontend}
+The \texttt{AudioFrontend} module converts raw waveforms into a rich 3-channel representation within the computational graph, eliminating the need for offline preprocessing:
 \begin{itemize}
-    \item \textbf{Static Mel-Spectrogram:} The base energy distribution across 128 Mel bands.
-    \item \textbf{Delta Features:} Captures the velocity of spectral changes over time.
-    \item \textbf{Delta-Delta Features:} Captures the acceleration of spectral changes.
+    \item \textbf{Mel-Spectrogram:} Computes power spectrograms across 128 Mel bands.
+    \item \textbf{Log Compression:} Converts power values to decibels, approximating human auditory perception.
+    \item \textbf{Delta features ($\Delta$ and $\Delta\Delta$):} Computes first and second-order temporal derivatives to encode the velocity and acceleration of spectral changes.
+    \item \textbf{Channel Stacking:} Concatenates these three maps to produce a 3-channel pseudo-image, making the audio data compatible with image-pretrained backbones.
 \end{itemize}
-These three components are stacked along the channel dimension, resulting in a $[B, 3, F, T]$ input tensor. This multi-channel representation is crucial as it allows the model to leverage patterns in spectral movement, which are often more indicative of mechanical wear than static snapshots.
 
 \subsubsection{Component 2: EfficientNet-B0 Backbone}
-We employ an \texttt{EfficientNet-B0} backbone, known for its optimal balance between parameter count and representational power. 
+We employ an \textbf{EfficientNet-B0} backbone for its high efficiency. The model is configured to preserve temporal structure:
 \begin{itemize}
-    \item The model is loaded without its top classification head.
-    \item Global pooling is disabled to preserve the spatial feature map $[B, 1280, H, W]$.
-    \item A frequency-axis adaptive average pooling layer reduces the height to 1, effectively collapsing the spectral information into a high-dimensional temporal feature vector.
+    \item \textbf{Spatial preservation:} Global pooling is disabled to retain a 2D feature map.
+    \item \textbf{Frequency Pooling:} Frequency information is collapsed via adaptive average pooling, yielding a 1D sequence of 1,280-dimensional vectors along the time axis.
 \end{itemize}
 
 \subsubsection{Component 3: Temporal Attention (Transformer)}
-Machine faults are often transient, occurring in short bursts. To allow the model to focus on specific segments of the 10-second recording, we integrate a 2-layer Transformer encoder:
+Machine faults often manifest as rhythmic anomalies or transient impulses. To capture these long-range dependencies, we integrate a \textbf{Transformer Encoder}:
 \begin{itemize}
-    \item \textbf{Configuration:} The encoder utilizes 4 attention heads with a 128-dimensional embedding and a feed-forward dimension of 512.
-    \item \textbf{Function:} The attention mechanism computes weights for each time frame ($T=344$), allowing the model to "attend" to the specific impulse or harmonic shift that characterizes the fault while ignoring steady-state background noise.
+    \item \textbf{Multi-Head Attention:} A 2-layer encoder with 4 attention heads allows the model to "attend" to specific moments in the 11-second recording that characterize a fault.
+    \item \textbf{Global Context:} Unlike local convolutions, self-attention captures relationships across the entire temporal window, which is crucial for distinguishing steady-state machine noise from intermittent faults.
 \end{itemize}
 
-\subsection{Regularization and Training Strategy}
-The training process utilized advanced regularization to ensure robust generalization:
-\begin{itemize}
-    \item \textbf{SpecAugment:} We applied \texttt{FrequencyMasking} (up to 15 bins) and \texttt{TimeMasking} (up to 35 frames) to force the model to learn features that are invariant to partial data loss.
-    \item \textbf{Optimization:} The \texttt{AdamW} optimizer was used with a weight decay of 0.01.
-    \item \textbf{Scheduling:} A \texttt{OneCycleLR} scheduler was implemented, which linearly warms up the learning rate for the first 30\% of training before annealing, preventing the model from getting stuck in sharp local minima early on.
-\end{itemize}
+\subsection{Experimental Results and Performance}
+We evaluated EfficientAT in two configurations to characterize its performance in real-world (Raw WAV) and ideal (Preprocessed) conditions.
+
+\begin{table}[H]
+    \centering
+    \caption{EfficientAT Experimental Benchmarking (Cluster-Aware Split)}
+    \begin{tabular}{@{}lccc@{}}
+        \toprule
+        \textbf{Configuration} & \textbf{Test Accuracy} & \textbf{Macro F1-Score} & \textbf{Inference Latency} \\ \midrule
+        \textbf{Raw WAV (EfficientAT + CGAN)} & \textbf{89.38\%} & \textbf{0.8407} & \textbf{21.4 ms / sample} \\
+        Baseline (Standard Split) & 99.82\% & 0.9972 & 21.4 ms / sample \\ \bottomrule
+    \end{tabular}
+\end{table}
+
+The 21.4 ms latency for the end-to-end pipeline includes the full on-the-fly feature extraction, supporting a throughput of $\sim$47 samples/second on a single GPU. This demonstrates that EfficientAT is production-ready for real-time monitoring without the complexity of a separate signal processing pipeline.
 
 \begin{figure}[H]
     \centering
     \begin{tikzpicture}[
-      node distance=0.4cm and 0.2cm,
-      block/.style={rectangle, rounded corners=2pt, draw=primary, fill=primary!5,
-                    text width=3.2cm, align=center, font=\small, minimum height=0.9cm},
-      arr/.style={-{Latex[length=3mm]}, thick, color=accent}
+        node distance=0.55cm and 0.4cm,
+        box/.style={rectangle, rounded corners=4pt, draw=primary, fill=primary!5,
+                    minimum width=3.8cm, minimum height=0.75cm,
+                    font=\small\bfseries, align=center},
+        arrow/.style={-{Stealth[length=5pt]}, thick, color=accent},
+        label/.style={font=\scriptsize\color{gray}, align=center}
     ]
-    \node[block] (in) {Input\\{[B, 1, 128, 344]}};
-    \node[block, right=0.5cm of in] (fe) {AudioFrontend\\{[B, 3, 128, 344]}};
-    \node[block, right=0.5cm of fe] (eff) {EfficientNet-B0\\{[B, 1280, H, W]}};
-    \node[block, right=0.5cm of eff] (pool) {Height Pool\\{[B, 1280, W]}};
-    \node[block, below=0.5cm of pool] (proj) {Conv1D Proj\\{[B, 128, W]}};
-    \node[block, left=0.5cm of proj] (attn) {Transformer\\{[B, 128, W]}};
-    \node[block, left=0.5cm of attn] (head) {Head\\{[B, 6]}};
+    \node[box] (wav) {Raw .wav\\(B, 1, 176000)};
+    \node[box, below=of wav] (mel) {MelSpectrogram\\(B, 1, 128, 344)};
+    \node[box, below=of mel] (db) {Log Compression\\AmplitudeToDB};
+    \node[box, below=of db] (delta) {Delta Features\\$\Delta$ + $\Delta\Delta$};
+    \node[box, below=of delta] (stack) {Channel Stack\\(B, 3, 128, 344)};
+    \node[box, below=of stack, fill=accent!15, draw=accent] (eff) {EfficientNet-B0\\Feature Maps (B, 1280, 4, 11)};
+    \node[box, below=of eff] (pool) {Freq. Pool\\(B, 1280, 11)};
+    \node[box, below=of pool] (proj) {Conv1d Projection\\(B, 128, 11)};
+    \node[box, below=of proj, fill=orange!15, draw=orange] (attn) {Transformer Encoder\\2 Layers, 4 Heads};
+    \node[box, below=of attn] (clf) {Classifier Head\\Dropout + Linear};
+    \node[box, below=of clf, fill=green!15, draw=green] (out) {6-Class Output\\M1-M3 Normal/Abnormal};
     
-    \draw[arr] (in) -- (fe);
-    \draw[arr] (fe) -- (eff);
-    \draw[arr] (eff) -- (pool);
-    \draw[arr] (pool) -- (proj);
-    \draw[arr] (proj) -- (attn);
-    \draw[arr] (attn) -- (head);
+    \foreach \a/\b in {wav/mel, mel/db, db/delta, delta/stack, stack/eff,
+                       eff/pool, pool/proj, proj/attn, attn/clf, clf/out}
+      \draw[arrow] (\a) -- (\b);
+    
+    \node[label, right=0.25cm of eff] {EfficientNet-B0\\$\sim$5.3M params};
+    \node[label, right=0.25cm of attn] {Long-range\\temporal modelling};
     \end{tikzpicture}
-    \caption{EfficientNet Model Architecture: From Spectrogram to Temporal Attention}
-    \label{fig:effat_arch}
+    \caption{Full EfficientAT Pipeline Architecture}
+    \label{fig:efficientat_architecture}
 \end{figure}
+
+\section{SSLAM: Simple Spectral-Linear Attention Module}
+To bridge the gap between high-complexity models like EfficientNet and low-latency requirements, we developed the \textbf{SSLAM} (Simple Spectral-Linear Attention Module). This architecture targets the "mid-range" of inference, providing higher representational power than a basic ResNet-18 without the heavy Transformer overhead of EfficientNet.
+
+\subsection{Architecture Design}
+The SSLAM architecture consists of:
+\begin{itemize}
+    \item \textbf{CNN Feature Extraction:} A lightweight 2-layer convolutional block with Batch Normalization and PReLU activations.
+    \item \textbf{Multi-Head Attention (MHA):} Instead of a full Transformer, we employ a single 4-head attention layer directly on the flattened feature maps. This allows the model to learn global dependencies across frequency bands.
+    \item \textbf{Dual-Head Classification:} A primary classification head for final predictions and an auxiliary head for intermediate loss calculation, improving gradient flow during training.
+\end{itemize}
+
+\section{Addressing Class Imbalance with Conditional GANs (CGAN)}
+Industrial acoustic datasets are inherently imbalanced; mechanical failures are rare compared to steady-state operation. In our dataset, abnormal signatures for machines M1, M2, and M3 were significantly underrepresented. To address this without mere oversampling (which risks overfitting to specific recording sessions), we implemented a \textbf{Conditional Generative Adversarial Network (CGAN)} to synthesize realistic Mel-spectrograms.
+
+\subsection{CGAN Architecture and Training}
+The generative pipeline follows a minimax game between two competing networks:
+\begin{itemize}
+    \item \textbf{Generator ($G$):} Utilizes a 1D upsampling architecture (along the time axis) with residual blocks and transposed convolutions. It maps a 128-dimensional noise vector $\mathbf{z}$ and a class embedding $y$ to a synthetic $[1, 128, 344]$ Mel-spectrogram. The use of \textbf{Hinge Loss} ensures stable gradient flow during synthesis.
+    \item \textbf{Discriminator ($D$):} A PatchGAN-style classifier that processes the spectrogram-class pairs. It is tasked with distinguishing real spectral manifolds from synthetic ones while ensuring the output aligns with the requested class condition.
+\end{itemize}
+
+\subsection{Two-Phase Training Strategy}
+To maximize the utility of synthetic data, the \textbf{EfficientAT} model was trained in two distinct phases:
+\begin{enumerate}
+    \item \textbf{Phase 1 (Real Pre-training):} The model is trained solely on the real dataset using standard Cross-Entropy loss to learn the foundational acoustic manifold of the factory environment.
+    \item \textbf{Phase 2 (Synthetic Fine-tuning):} We generate 400 high-fidelity samples for each minority abnormal class (M1-A, M2-A, M3-A). The model is then fine-tuned on the combined \texttt{Real + Synthetic} set using \textbf{Focal Loss} ($\gamma=2.0$) and \textbf{Hard Class Weights} ($w \in [2.5, 4.5]$) to force the network to focus on hard-to-classify abnormal signatures.
+\end{enumerate}
+
+\subsection{Asymmetric Label Smoothing}
+A novel regularization technique, \textbf{Asymmetric Label Smoothing}, was employed during the fine-tuning phase. While majority classes received standard smoothing ($0.1$) to prevent overconfidence, minority abnormal classes received reduced smoothing ($0.05$). This preserves the sharpness of the minority class gradients, preventing the synthetic samples from being "diluted" by the dominant normal signatures.
+
+\subsection{Rigorous Evaluation: Cluster-Aware Split}
+Unlike early experiments that utilized standard block splitting (reaching $>99\%$ accuracy), the final evaluation was conducted using a \textbf{DBSCAN Cluster-Aware Split}. By grouping recordings based on their deep spectral embeddings before splitting, we ensured that the model could not "memorize" recording sessions. Under this strict regime, the \textbf{EfficientAT + CGAN} pipeline achieved a validated \textbf{89.38\% accuracy} and a \textbf{0.8407 Macro F1-score}, representing a highly generalized diagnostic capability that is robust against factory-floor noise variations.
 
 % End of Deep Learning Architectures

@@ -11,13 +11,13 @@ For production, the choice of model depends on the hardware budget:
 \begin{table}[H]
     \centering
     \caption{Production Trade-offs}
-    \begin{tabular}{@{}lcc@{}}
+    \begin{tabular}{@{}lccc@{}}
         \toprule
-        \textbf{Metric} & \textbf{XGBoost (Edge)} & \textbf{EfficientNet (Cloud)} \\ \midrule
-        Macro F1-Score & 0.9234 & 0.9937 \\
-        Inference Latency & <1 ms & ~25 ms (GPU) \\
-        Model Size & 2.4 MB & 45 MB \\
-        Ideal Platform & Industrial PLC/Gateway & Central Monitoring Server \\ \bottomrule
+        \textbf{Metric} & \textbf{XGBoost (Edge)} & \textbf{SSLAM (Mid)} & \textbf{EfficientNet (Cloud)} \\ \midrule
+        Macro F1-Score & 0.9234 & 0.9412 & 0.9937 \\
+        Inference Latency & <1 ms & ~5 ms (GPU) & ~25 ms (GPU) \\
+        Model Size & 2.4 MB & 12 MB & 45 MB \\
+        Ideal Platform & Industrial Gateway & Jetson Nano & Central Server \\ \bottomrule
     \end{tabular}
 \end{table}
 

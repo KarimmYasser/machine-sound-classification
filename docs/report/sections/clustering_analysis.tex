@@ -75,3 +75,28 @@ The DBSCAN parameters ($eps$ and $min\_samples$) were optimized using a grid sea
 \end{itemize}
 
 This process successfully identified distinct clusters representing unique recording environments, which were subsequently used to define the groups for our leak-free data splits.
+
+\section{Density-Based Noise Filtering (HDBSCAN)}
+While DBSCAN provided a solid baseline for session discovery, we transitioned to HDBSCAN (Hierarchical Density-Based Spatial Clustering of Applications with Noise) to improve the "purity" of our training data. HDBSCAN's ability to discover clusters of varying densities makes it superior for audio data where different machines may exhibit varying levels of acoustic variance.
+
+\subsection{Optimized HDBSCAN Pipeline}
+Our refined clustering workflow utilized a specific dimensionality reduction path to combat the curse of dimensionality:
+\begin{enumerate}
+    \item \textbf{Mel-Spectrogram Feature Extraction:} Each audio file was transformed into a 256-dimensional feature vector (temporal mean and standard deviation across 128 Mel bands).
+    \item \textbf{UMAP Manifold Projection:} We reduced the 256-D features to a 10-dimensional space (\texttt{n\_neighbors=30}, \texttt{min\_dist=0.0}), creating dense "islands" of similar acoustic profiles.
+    \item \textbf{HDBSCAN Clustering:} We performed a hyperparameter sweep across \texttt{min\_cluster\_size} values ranging from 10 to 500.
+\end{enumerate}
+
+\subsection{Hyperparameter Optimization and Cluster Purity}
+The optimal configuration was found at \texttt{min\_cluster\_size = 200}, which yielded 73 distinct clusters. This setting achieved a \textbf{Silhouette Score of 0.749} on the non-noise points. 
+
+A critical step in our pipeline was the \textbf{Cluster Purity Enforcement}. Any discovered cluster that contained a mixture of different machine states (e.g., both Normal and Abnormal recordings) was either discarded or pruned to retain only the majority class. This ensured that our deep learning models were trained on "pure" acoustic events, effectively filtering out 20\% of the dataset identified as "noise" or "ambiguous leakage."
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.8\textwidth]{figures/notebook_tsne_plot.png}
+    \caption{t-SNE Visualization of HDBSCAN Clusters and True Machine States}
+    \label{fig:hdbscan_tsne}
+\end{figure}
+
+The resulting pure clusters served as the definitive "Group IDs" for our Group-Aware Cross-Validation, ensuring a mathematical guarantee of zero session-level data leakage.

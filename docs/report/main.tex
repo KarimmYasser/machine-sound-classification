@@ -106,7 +106,7 @@ Mohamed Abdelaziem Sayed & 9230784 & mohamed.bakry04@eng-st.cu.edu.eg \\
 
 \chapter*{Abstract}
 \addcontentsline{toc}{chapter}{Abstract}
-This report provides an in-depth exploration of a robust machine sound classification system designed for industrial acoustic monitoring. Over the course of the project, we developed a sophisticated dual-model pipeline capable of detecting anomalies across multiple machine types with high precision. By addressing critical challenges such as non-sequential data leakage and class imbalance, we achieved a production-ready solution. The methodology spans from raw audio processing to state-of-the-art EfficientNet models, providing a comprehensive blueprint for industrial predictive maintenance.
+This report provides an in-depth exploration of a robust machine sound classification system designed for industrial acoustic monitoring. Over the course of the project, we developed a sophisticated dual-model pipeline capable of detecting anomalies across multiple machine types. By addressing critical challenges such as recording session data leakage and class imbalance, we achieved a highly generalized solution. The methodology transition from initial high-accuracy block-splits to a rigorous \textbf{DBSCAN Cluster-Aware} evaluation regime, supported by a \textbf{Conditional GAN (CGAN)} for minority class augmentation. Our proposed \textbf{EfficientAT} architecture—integrating a differentiable audio frontend with a temporal attention mechanism—demonstrates a robust diagnostic capability, achieving a validated 89.38\% accuracy on leakage-free industrial acoustic signatures.
 
 \mainmatter
 
