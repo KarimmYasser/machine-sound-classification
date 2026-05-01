@@ -1,0 +1,7 @@
+gradio
+joblib
+librosa
+numpy
+xgboost
+scikit-learn
+soundfile
