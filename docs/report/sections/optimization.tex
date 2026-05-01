@@ -27,14 +27,17 @@ Given the 5:1 class imbalance, we utilized the \texttt{compute\_sample\_weight} 
 \section{Hardware Acceleration and Training Efficiency}
 To facilitate rapid experimentation, we leveraged GPU acceleration for both the XGBoost and EfficientNet pipelines. By utilizing the \texttt{tree\_method='hist'} and \texttt{device='cuda'} configurations in XGBoost, we reduced the training time for a 1000-estimator model from minutes to seconds.
 
-\subsection{Solving the CPU Bottleneck}
-During initial deep learning experiments, we identified a significant performance bottleneck. The CPU was responsible for loading raw \texttt{.wav} files and computing 128-band Mel-spectrograms on-the-fly, leaving NVIDIA GPUs idling for 60-70\% of the time.
-
-\subsection{Mel-NPY Conversion Strategy}
-To saturate the GPUs and reduce training time from hours to minutes, we implemented a pre-caching strategy:
+\subsection{Solving the CPU Bottleneck: Mel-NPY Conversion}
+During initial deep learning experiments, we identified a significant performance bottleneck. The CPU was responsible for loading raw \texttt{.wav} files and computing 128-band Mel-spectrograms on-the-fly, leaving NVIDIA GPUs idling for 60-70\% of the time. To saturate the GPUs and reduce training time from hours to minutes, we implemented a pre-caching strategy:
 \begin{enumerate}
     \item \textbf{Offline Preprocessing:} A dedicated script traversed the dataset and precomputed all spectral tensors.
     \item \textbf{Binary Serialization:} Results were saved as binary \texttt{.npy} files.
     \item \textbf{Data Ingestion:} The training loop was updated to load these tensors directly, eliminating FFT overhead.
 \end{enumerate}
 This optimization resulted in a \textbf{4x speedup} in training throughput and maintained GPU utilization above 95\%.
+
+\section{Production-Grade Inference: High-Performance Rust Engine}
+While the Mel-NPY strategy optimized training, real-time inference on the factory floor required a different approach. Standard libraries like \texttt{librosa} are constrained by the Python Global Interpreter Lock (GIL), creating a bottleneck during sequential file processing. To achieve industrial-grade performance, we developed a custom native extension, \textbf{fast\_features}, written in \textbf{Rust}. 
+
+\subsection{Technical Implementation and Performance}
+The extension utilizes the \textbf{PyO3} framework and the \textbf{rayon} crate for parallel frame processing. Benchmarking on the 15,000-sample test set demonstrated a \textbf{57x speedup} compared to the original Librosa implementation. The average latency for the entire pipeline was reduced to just \textbf{9.8 ms per sample}, ensuring that our system can monitor multiple machine lines simultaneously from a single edge gateway.

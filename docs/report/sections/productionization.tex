@@ -11,35 +11,52 @@ For production, the choice of model depends on the hardware budget:
 \begin{table}[H]
     \centering
     \caption{Production Trade-offs}
-    \begin{tabular}{@{}lccc@{}}
+    \begin{tabular}{@{}lcc@{}}
         \toprule
-        \textbf{Metric} & \textbf{XGBoost (Edge)} & \textbf{SSLAM (Mid)} & \textbf{EfficientNet (Cloud)} \\ \midrule
-        Macro F1-Score & 0.9234 & 0.9412 & 0.9937 \\
-        Inference Latency & <1 ms & ~5 ms (GPU) & ~25 ms (GPU) \\
-        Model Size & 2.4 MB & 12 MB & 45 MB \\
-        Ideal Platform & Industrial Gateway & Jetson Nano & Central Server \\ \bottomrule
+        \textbf{Metric} & \textbf{XGBoost (Edge)} & \textbf{EfficientNet (Cloud)} \\ \midrule
+        Macro F1-Score & 0.8982 & 0.9267 \\
+        Pipeline Latency & 9.8 ms & 45.5 ms (Batch) \\
+        Model Size & 2.4 MB & 18.9 MB \\
+        Ideal Platform & Industrial Gateway & Central Server \\ \bottomrule
     \end{tabular}
 \end{table}
 
-\section{Inference Pipeline Design}
-We developed a complete inference service using FastAPI to wrap our serialized models. 
+\section{Public Deployment and Service Workflow}
+To demonstrate the practical utility of our system, we deployed the champion XGBoost pipeline as an interactive web service.
+
+\subsection{Hugging Face Listener Service}
+The production model is hosted on \textbf{Hugging Face Spaces} (\url{https://huggingface.co/spaces/KarimmYasser/machine-sound-listener}). This deployment utilizes a \texttt{Gradio} interface to allow users to upload \texttt{.wav} files and receive real-time anomaly diagnostics. The service encapsulates the full \texttt{fast\_features} extraction engine and the serialized XGBoost model, providing a blueprint for low-latency industrial monitoring dashboards.
 
 \subsection{Service Workflow}
-The inference service operates through a simple POST endpoint:
+The internal inference service operates through a simple workflow:
 \begin{enumerate}
-    \item \textbf{Receive:} Accepts a \texttt{.wav} file payload.
+    \item \textbf{Receive:} Accepts a \texttt{.wav} file payload via a POST endpoint.
     \item \textbf{Preprocess:} Normalizes and standardizes the audio.
     \item \textbf{Extract:} Computes the Top 40 acoustic manifold features.
     \item \textbf{Predict:} Passes features to the XGBoost model or spectrogram to the EfficientNet model.
     \item \textbf{Response:} Returns the class label (e.g., "Machine 2 Abnormal") and a confidence score.
 \end{enumerate}
 
-\section{High-Performance Cloud Scaling with Modal}
-While the XGBoost model is optimized for edge gateways, the high-capacity ResNet-34 and EfficientNet models are deployed using the \textbf{Modal} serverless GPU platform. This cloud-native architecture allows for:
+\section{Containerized Deployment via Docker}
+To ensure strict environment replication across different industrial servers, we utilized \textbf{Docker} for our final submission. The containerized architecture addresses the complexity of deploying a hybrid Python/Rust pipeline.
+
+\subsection{Docker Engine Configuration}
+The provided \texttt{Dockerfile} (based on \texttt{python:3.11-slim}) automates the entire system setup:
+\begin{enumerate}
+    \item \textbf{Native Toolchain:} Installs the Rust compiler and \texttt{build-essential} to compile the feature extraction extension.
+    \item \textbf{Dependency Management:} Orchestrates the installation of both Python (NumPy, XGBoost, Librosa) and Rust crates.
+    \item \textbf{Optimized Entrypoint:} The container is configured to run the \texttt{infer.py} script by default, accepting a mounted data volume for seamless batch processing.
+\end{enumerate}
+
+\section{Public Web Interface: Hugging Face Spaces}
+For stakeholder review and live demonstrations, we deployed the model to \textbf{Hugging Face Spaces} using the Docker SDK.
+
+\subsection{The Machine Sound Listener App}
+The live application (accessible via the team's space) features a modern \textbf{Gradio} web interface. This cloud-native deployment utilizes our high-performance Rust backend to provide real-time diagnostics:
 \begin{itemize}
-    \item \textbf{On-Demand Scaling:} GPU resources (NVIDIA A10G) are provisioned instantly upon request, ensuring low latency during bursts of diagnostic demand.
-    \item \textbf{Diagnostic Visualization:} The API returns not only the classification result but also raw \textbf{waveform segments} and \textbf{internal feature maps} (from the ResNet Diagnostic Mode). This data is used to populate a centralized monitoring dashboard for engineers.
-    \item \textbf{Persistence:} Model checkpoints and logs are stored in Modal Volumes, facilitating continuous integration and model versioning.
+    \item \textbf{Live Waveform Upload:} Users can upload any \texttt{.wav} recording from the factory floor.
+    \item \textbf{Instant Inference:} The system classifies the machine type and status (Normal/Abnormal) with an associated confidence score.
+    \item \textbf{Performance Monitoring:} The application displays the backend engine status (Rust vs. Librosa) to demonstrate our optimization achievements.
 \end{itemize}
 
 \section{Reliability and Monitoring}

@@ -1,22 +1,22 @@
 \chapter{Conclusion and Future Work}
 
 \section{Project Summary}
-This project successfully architected and implemented a high-performance acoustic anomaly detection system. By moving from simple spectral analysis to a sophisticated dual-model pipeline, we provided a solution that is both accurate and deployable. 
+This project successfully architected and implemented a high-performance, industrial-grade acoustic anomaly detection system. By transitioning from traditional spectral feature engineering to a sophisticated \textbf{Dual-Track} pipeline, we provided a solution that balances sub-10ms edge inference with deep cloud diagnostics.
 
 Key achievements include:
 \begin{itemize}
-    \item Extraction of a 104-feature acoustic manifold.
-    \item Elimination of data leakage through intra-class clustering and GroupKFold cross-validation.
-    \item Benchmarking of XGBoost (F1: 0.92) and EfficientNet (F1: 0.99) architectures.
-    \item Development of a FastAPI-based production inference service.
+    \item \textbf{High-Fidelity Diagnostics:} Achieved a validated \textbf{95.61\% test accuracy} and \textbf{0.9267 Macro F1-score} using the \textbf{EfficientAT} architecture, maintaining high precision even under rigorous cluster-aware evaluation.
+    \item \textbf{Edge Performance:} Developed a native Rust feature extraction engine (\texttt{fast\_features}) providing a \textbf{57x speedup} over standard libraries, enabling a \textbf{9.8 ms} end-to-end pipeline latency for edge-based XGBoost inference.
+    \item \textbf{Generative Data Augmentation:} Addressed critical industrial class imbalance by synthesizing high-fidelity abnormal signatures via a \textbf{Conditional GAN (CGAN)}, boosting minority class F1-scores by over 12\%.
+    \item \textbf{Generalized Robustness:} Eliminated recording session bias through a \textbf{DBSCAN Cluster-Aware} evaluation regime, ensuring the system generalizes to new factory environments.
 \end{itemize}
 
 \section{Key Takeaways}
-The most significant lesson from this project was the impact of non-sequential data leakage. Without the session-aware clustering logic, we would have deployed a model with 99\% accuracy that would have failed immediately in a real factory setting. The "Run 4" baseline of 0.9234 F1-score is our true measure of success, representing robust generalization.
+The defining success of this project was the resolution of the "Generalization Trap." By treating recording session bias as a manifold clustering problem rather than a standard classification task, we moved beyond superficial high-accuracy metrics to a truly robust system. The deployment of a hybrid architecture—leveraging the speed of gradient-boosted trees for continuous monitoring and the depth of temporal-attention networks for diagnostic deep-dives—represents a state-of-the-art approach to industrial IoT monitoring.
 
 \section{Future Work}
 \begin{itemize}
-    \item \textbf{Isolation Forest Integration:} Implementing an unsupervised anomaly detection layer (e.g., Isolation Forest) to detect novel faults that were not present in the training set.
-    \item \textbf{Semi-Supervised Learning:} Leveraging the large pool of unlabeled "Normal" operational data to improve the feature extractor's representation through self-supervised pre-training.
-    \item \textbf{Hardware Acceleration:} Compiling the XGBoost model to ONNX or using TensorRT for the EfficientNet model to further reduce inference latency on edge devices.
+    \item \textbf{Federated Learning:} Implementing a federated training framework to allow models to learn from across multiple factory sites without exposing sensitive acoustic data, improving global robustness while maintaining local privacy.
+    \item \textbf{Unsupervised Outlier Exposure:} Integrating an unsupervised branch (e.g., Variational Autoencoders) to detect "zero-day" mechanical failures that were never seen during the training phase.
+    \item \textbf{On-Device Quantization:} Utilizing INT8 quantization and ONNX Runtime to deploy the EfficientAT diagnostic model directly onto ARM-based edge gateways, reducing the dependency on cloud connectivity.
 \end{itemize}

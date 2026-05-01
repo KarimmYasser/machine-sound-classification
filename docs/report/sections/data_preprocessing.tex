@@ -13,12 +13,17 @@ Because our system relies on both tabular and deep learning architectures, we im
     \item \textbf{Pre-emphasis Filter:} Applied to enhance high-frequency components prior to MFCC extraction ($\alpha = 0.97$).
 \end{itemize}
 
-\textbf{Track B: Deep Learning Pipeline (EfficientNet)}
+\textbf{Track B: Deep Learning Pipeline (Neural Networks)}
 \begin{itemize}
     \item \textbf{Resampling:} Signals are downsampled to 16,000 Hz using \texttt{sinc\_interp\_hann}. This preserves the critical 0–8 kHz band required for mechanical fault detection while drastically reducing tensor memory footprint.
-    \item \textbf{Length Standardization:} Because Machine 1 and 2 exhibit critical anomalies at the very end of their 11.0s recordings, truncation is prohibited. All Machine 3 recordings (10.0s) are zero-padded to a uniform 11.0s (176,000 samples).
-    \item \textbf{Global Standardization (Crucial):} Exploratory data analysis proved that absolute RMS energy is a highly significant fault indicator ($p=0.0000$). Per-file instance normalization is therefore strictly prohibited. We calculate and apply the mean and standard deviation across the \textit{entire} training set globally to preserve these inter-file energy differences.
+    \item \textbf{Length Standardization:} All Machine 3 recordings (10.0s) are zero-padded to a uniform 11.0s (176,000 samples) to match the duration of Machines 1 and 2, ensuring fixed-length tensor inputs.
+    \item \textbf{Global Standardization (Crucial):} Per-file instance normalization is strictly prohibited. We calculate and apply the mean and standard deviation across the \textit{entire} training set globally to preserve inter-file energy differences, as absolute volume is a critical fault indicator.
 \end{itemize}
+
+\section{The Mel Spectrogram Transformation}
+The cornerstone of our deep learning approach is the conversion of 1D temporal waveforms into 2D \textbf{Mel Spectrograms}, processed using the \texttt{Librosa} library \cite{librosa}. This transformation allows us to leverage state-of-the-art Computer Vision architectures (such as \textbf{EfficientNet}) by treating acoustic classification as an image recognition problem.
+
+By mapping frequencies to the Mel scale—a non-linear transformation that approximates human auditory perception \cite{davis1980mfcc}—we emphasize the frequency bands most relevant to mechanical operation while compressing less informative regions. Our unified representation uses 128 Mel bands and a 1024-sample Hanning window. This "visual fingerprint" captures the complex spectral manifolds of industrial sounds, making it the primary input for all subsequent neural network layers.
 
 \section{Augmentation Techniques}
 Industrial anomalies are rare events. To train a deep neural network effectively, we must artificially expand the "Abnormal" data pool. We employed two primary augmentation strategies to increase dataset diversity by 3x.

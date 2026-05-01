@@ -106,7 +106,23 @@ Mohamed Abdelaziem Sayed & 9230784 & mohamed.bakry04@eng-st.cu.edu.eg \\
 
 \chapter*{Abstract}
 \addcontentsline{toc}{chapter}{Abstract}
-This report provides an in-depth exploration of a robust machine sound classification system designed for industrial acoustic monitoring. Over the course of the project, we developed a sophisticated dual-model pipeline capable of detecting anomalies across multiple machine types. By addressing critical challenges such as recording session data leakage and class imbalance, we achieved a highly generalized solution. The methodology transition from initial high-accuracy block-splits to a rigorous \textbf{DBSCAN Cluster-Aware} evaluation regime, supported by a \textbf{Conditional GAN (CGAN)} for minority class augmentation. Our proposed \textbf{EfficientAT} architecture—integrating a differentiable audio frontend with a temporal attention mechanism—demonstrates a robust diagnostic capability, achieving a validated 89.38\% accuracy on leakage-free industrial acoustic signatures.
+This report provides an in-depth exploration of a robust machine sound classification system designed for industrial acoustic monitoring. Over the course of the project, we developed a sophisticated dual-model pipeline capable of detecting anomalies across multiple machine types. By addressing critical challenges such as recording session data leakage and class imbalance, we achieved a highly generalized solution. The methodology transition from initial high-accuracy block-splits to a rigorous \textbf{DBSCAN Cluster-Aware} evaluation regime, supported by a \textbf{Conditional GAN (CGAN)} for minority class augmentation. Our proposed \textbf{EfficientAT} architecture—integrating a differentiable audio frontend with a temporal attention mechanism—demonstrates a robust diagnostic capability, achieving a validated 95.61\% accuracy on leakage-free industrial acoustic signatures.
+
+\vspace{1.5cm}
+\section*{Workload Distribution}
+The technical milestones of this project were achieved through a collaborative effort, with each member leading specific tracks of the pipeline development.
+
+\begin{center}
+\renewcommand{\arraystretch}{1.4}
+\begin{tabular}{@{}lp{10cm}@{}}
+\toprule
+\textbf{Member} & \textbf{Core Responsibilities and Technical Contributions} \\ \midrule
+Abdallah Ayman & Dataset Ingestion, Preprocessing Pipeline, Pre-emphasis Filtering, and Feature Engineering (MFCC/Contrast). \\
+Karim Yasser & Full Machine Learning Pipeline (XGBoost Development, K-Means Clustering, and Benchmarking), Rust Engine, and Dockerization. \\
+Mohamed Ahmed & Conditional GAN (CGAN) Synthesis, Data Augmentation Research, and Technical Reporting. \\
+Mohamed Abdelaziem & EDA Visualization, Class Imbalance Handling, and Deep Learning Pipeline (EfficientAT). \\ \bottomrule
+\end{tabular}
+\end{center}
 
 \mainmatter
 
@@ -123,7 +139,7 @@ This report provides an in-depth exploration of a robust machine sound classific
 \include{sections/conclusion}
 
 \backmatter
-% \bibliographystyle{plain}
-% \bibliography{references}
+\bibliographystyle{plain}
+\bibliography{references}
 
 \end{document}

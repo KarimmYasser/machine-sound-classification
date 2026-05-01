@@ -12,7 +12,7 @@ SVM was our initial baseline. Using a Radial Basis Function (RBF) kernel, it pro
 Random Forest proved to be an excellent tool for feature importance analysis. While its classification performance was slightly below gradient-boosted methods, it provided stable results across different clustering granularities and was highly robust to noisy features.
 
 \section{The Champion: XGBoost}
-XGBoost (Extreme Gradient Boosting) was selected as the champion model for the tabular pipeline. 
+XGBoost (Extreme Gradient Boosting) \cite{xgboost2016} was selected as the champion model for the tabular pipeline, utilizing the \texttt{Scikit-Learn} ecosystem \cite{scikit2011}. 
 
 \subsection{Hyperparameter Optimization}
 We conducted a Grid Search to find the optimal hyperparameters:
@@ -36,11 +36,16 @@ Under the full-dataset benchmark run with strict session grouping, XGBoost achie
         SVM (Baseline) & 0.8852 & 0.9430 & 0.1469 ms \\
         Random Forest & 0.8930 & 0.9290 & 0.0017 ms \\
         \textbf{XGBoost} & \textbf{0.8982} & \textbf{0.9388} & \textbf{0.0013 ms} \\
-        \textbf{SSLAM} & \textbf{0.9124} & \textbf{0.9315} & \textbf{~5 ms (GPU)} \\
-        \textbf{ResNet-18} & \textbf{0.9215} & \textbf{0.9402} & \textbf{~12 ms (GPU)} \\
-        \textbf{EfficientAT + CGAN} & \textbf{0.8407} & \textbf{0.8938} & \textbf{21.4 ms (GPU)} \\ \bottomrule
+        \textbf{EfficientAT + CGAN} & \textbf{0.9267} & \textbf{0.9561} & \textbf{45.5 ms (Batch)} \\ \bottomrule
     \end{tabular}
 \end{table}
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.8\textwidth]{figures/cgan_confusion_matrix.png}
+    \caption{EfficientAT Confusion Matrix on Cluster-Aware Test Set}
+    \label{fig:confusion_matrix}
+\end{figure}
 
 \begin{figure}[H]
     \centering
@@ -49,14 +54,14 @@ Under the full-dataset benchmark run with strict session grouping, XGBoost achie
     \label{fig:model_benchmark}
 \end{figure}
 \section{The Overfitting Trap and Model Selection}
-While the ResNet-18 and EfficientNet models achieved near-perfect accuracy on the validation set, we must exercise caution in designating them as the "best" models without qualification. High-capacity neural networks are prone to "Session Overfitting"—a phenomenon where the model learns the specific acoustic profile of a recording session (background noise, microphone placement) rather than the actual mechanical fault pattern.
+While the high-capacity deep learning models achieved near-perfect accuracy on the validation set, we must exercise caution in designating them as the "best" models without qualification. High-capacity neural networks are prone to "Session Overfitting"—a phenomenon where the model learns the specific acoustic profile of a recording session (background noise, microphone placement) rather than the actual mechanical fault pattern.
 
 \subsection{Why XGBoost is the Champion}
 Despite the higher F1-score of the deep learning models, XGBoost was selected as the primary champion for the industrial edge pipeline for several reasons:
 \begin{itemize}
     \item \textbf{Robustness:} The tabular features used by XGBoost are hand-crafted to represent physical acoustic properties (harmonicity, spectral centroid), making the model less likely to overfit to non-physical noise artifacts.
     \item \textbf{Efficiency:} XGBoost's sub-millisecond inference time on CPU is critical for edge gateways that lack dedicated GPU acceleration.
-    \item \textbf{Predictability:} The 0.9234 F1-score, while lower than the 0.99 of ResNet, represents a more generalized understanding of the machine manifold, as verified by our clustering analysis.
+    \item \textbf{Predictability:} The 0.8982 F1-score represents a more generalized understanding of the machine manifold, as verified by our clustering analysis and confirmed by our leakage-free benchmarking protocol. While EfficientAT achieves a higher F1-score (0.9267), XGBoost remains the edge champion for its unmatched inference speed.
 \end{itemize}
 
-In production, we employ a \textbf{Dual-Track Strategy}: XGBoost handles high-speed edge inference, while EfficientNet is reserved for cloud-based deep diagnostics where the highest possible precision is required.
+In production, we employ a \textbf{Dual-Track Strategy}: XGBoost handles high-speed edge inference, while EfficientAT is reserved for cloud-based deep diagnostics where the highest possible precision is required.

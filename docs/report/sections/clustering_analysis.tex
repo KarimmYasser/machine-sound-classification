@@ -37,10 +37,12 @@ We conducted an empirical study to find the "Goldilocks" zone of clustering:
 \end{table}
 
 \subsection{Selection of 300 Samples per Cluster}
-By targeting 300 samples per cluster, we ensure that the clusters are large enough to encompass entire recording sessions, thus preventing the model from learning file-specific signatures. This results in a slightly lower but far more realistic performance metric, which reflects the model's true ability to generalize to new machines.
+By targeting a granularity of \textbf{300 samples per cluster}, we ensure that the clusters are large enough to encompass entire recording sessions, thus preventing the model from learning file-specific signatures. In our final production run for the XGBoost pipeline, this strategy resulted in the formation of \textbf{749 unique acoustic clusters} across the six classes. 
+
+This specific configuration provides the "Goldilocks" zone: it is coarse enough to prevent session-level data leakage while remaining granular enough to provide the model with a diverse set of examples for each fault type. The resulting performance metrics (0.89 CV F1-score) are far more representative of real-world deployment than standard random splits.
 
 \section{Unsupervised Session Discovery (DBSCAN)}
-As an alternative approach for the Deep Learning pipeline, we utilized DBSCAN (Density-Based Spatial Clustering of Applications with Noise). This method is particularly effective for discovering the "physical recording events" that constitute the dataset without relying on class labels.
+As an alternative approach for the Deep Learning pipeline, we utilized \textbf{DBSCAN} (Density-Based Spatial Clustering of Applications with Noise) \cite{dbscan1996}. This method is particularly effective for discovering the "physical recording events" that constitute the dataset without relying on class labels.
 
 \subsection{Feature Representation for Discovery}
 To provide DBSCAN with a rich acoustic context, we extracted a 232-dimensional feature vector for every file. This vector includes:
@@ -56,7 +58,7 @@ The high-dimensional feature space was compressed to facilitate density-based cl
 \begin{enumerate}
     \item \textbf{StandardScaler:} Normalizing features to zero mean and unit variance.
     \item \textbf{PCA:} Retaining 95\% of the variance to remove noise and redundant correlations.
-    \item \textbf{UMAP (15-D):} Projecting the data into a 15-dimensional manifold specifically tuned for DBSCAN distance metrics (\texttt{n\_neighbors=30}, \texttt{min\_dist=0.0}).
+    \item \textbf{UMAP (15-D):} Projecting the data into a 15-dimensional manifold specifically tuned for DBSCAN distance metrics (\texttt{n\_neighbors=30}, \texttt{min\_dist=0.0}), utilizing the Uniform Manifold Approximation and Projection algorithm \cite{umap2018}.
 \end{enumerate}
 
 \begin{figure}[H]
@@ -77,7 +79,7 @@ The DBSCAN parameters ($eps$ and $min\_samples$) were optimized using a grid sea
 This process successfully identified distinct clusters representing unique recording environments, which were subsequently used to define the groups for our leak-free data splits.
 
 \section{Density-Based Noise Filtering (HDBSCAN)}
-While DBSCAN provided a solid baseline for session discovery, we transitioned to HDBSCAN (Hierarchical Density-Based Spatial Clustering of Applications with Noise) to improve the "purity" of our training data. HDBSCAN's ability to discover clusters of varying densities makes it superior for audio data where different machines may exhibit varying levels of acoustic variance.
+While DBSCAN provided a solid baseline for session discovery, we transitioned to \textbf{HDBSCAN} (Hierarchical Density-Based Spatial Clustering of Applications with Noise) \cite{hdbscan2013} to improve the "purity" of our training data. HDBSCAN's ability to discover clusters of varying densities makes it superior for audio data where different machines may exhibit varying levels of acoustic variance.
 
 \subsection{Optimized HDBSCAN Pipeline}
 Our refined clustering workflow utilized a specific dimensionality reduction path to combat the curse of dimensionality:

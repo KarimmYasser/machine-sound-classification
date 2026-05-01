@@ -1,41 +1,14 @@
 \chapter{Deep Learning Architectures}
 
-\section{Transition to Deep Learning}
-While tabular models are efficient, they rely on hand-crafted features. Deep learning models can learn hierarchal representations directly from raw acoustic data (spectrograms), potentially capturing subtle anomalies that manual features might miss.
+\section{Transition to Deep Learning: The Spectrogram Manifold}
+While tabular models are efficient, they rely on hand-crafted features. Our deep learning strategy treats audio classification as a computer vision problem. \textbf{All architectures discussed in this chapter utilize the 2D Mel Spectrogram as their primary input representation.} 
 
-\section{Architecture: ResNet-34 Convolutional Neural Network}
-Our primary deep learning experiment utilized a custom \textbf{ResNet-34} architecture. This model moves beyond the shallower ResNet-18 by employing a $(3, 4, 6, 3)$ residual block configuration, providing a deeper acoustic manifold for capturing complex mechanical signatures.
+By transforming raw 1D waveforms into this 2D time-frequency manifold, we allow the neural networks to learn hierarchical features—such as spectral texture, harmonic patterns, and temporal impulses—directly from the data. This unified "visual" representation is what enables our models to achieve state-of-the-art diagnostic accuracy across different machine types.
 
-\subsection{Regularization and Training Dynamics}
-To ensure robust generalization on the factory floor, we implemented a state-of-the-art regularization suite:
-\begin{itemize}
-    \item \textbf{SpecAugment:} We applied on-the-fly spectral masking, including Frequency Masking ($\nu=30$) and Time Masking ($\tau=80$). This prevents the model from overfitting to specific transient spectral artifacts.
-    \item \textbf{Mixup Augmentation:} In 30\% of training iterations, we employed Mixup ($\alpha=0.2$). This encourages the model to learn linear decision boundaries between acoustic classes, improving its performance on boundary-case anomalies.
-    \item \textbf{Label Smoothing:} We used a smoothing factor of $0.1$ in our Cross-Entropy loss to prevent overconfident predictions and improve calibration.
-    \item \textbf{Weight Decay:} A L2 penalty of $0.01$ and a Dropout layer ($p=0.5$) before the final classification head were used to constrain model complexity.
-\end{itemize}
+\section{Architectural Selection: Pivoting from ResNet to EfficientAT}
+Our initial deep learning experiments utilized a standard \textbf{ResNet-34} architecture to establish an accuracy baseline. While the ResNet model achieved high performance, it was ultimately deemed unsuitable for the final production pipeline. With over 21 million parameters, the memory footprint and inference latency of the ResNet backbone were too large for the resource-constrained edge gateways targeted by this project. 
 
-\section{Architectural Explainability (XAI)}
-A unique feature of our ResNet-34 implementation is its \textbf{Diagnostic Mode}. The model architecture is designed to return internal \textbf{Feature Maps} from every residual block during inference. By aggregating and visualizing these activations, engineers can see exactly which frequency bands or temporal impulses triggered an anomaly detection. This "Explainable AI" approach transforms the model from a black box into a transparent tool for root-cause analysis on the factory floor.
-
-\subsection{Experimental Iterations}
-We conducted several experimental runs with varying clip durations and dataset configurations to find the optimal training setup for the ResNet model.
-
-\begin{table}[H]
-    \centering
-    \caption{ResNet Performance across Experimental Runs}
-    \begin{tabular}{@{}lcccc@{}}
-        \toprule
-        \textbf{Run ID} & \textbf{Clip Duration} & \textbf{Dataset Source} & \textbf{Val Accuracy} & \textbf{Val F1-Score} \\ \midrule
-        Run 1 & 10.0s & Raw & 96.79\% & 0.9515 \\
-        Run 2 & 5.0s & Raw & 98.89\% & 0.9801 \\
-        Run 3 & 5.0s & Mel-NPY & 96.94\% & 0.9438 \\
-        Run 4 & 5.0s & Mel-NPY & 96.78\% & 0.9494 \\
-        Run 5 & \textbf{5.0s} & \textbf{Raw (Final)} & \textbf{99.57\%} & \textbf{0.9928} \\ \bottomrule
-    \end{tabular}
-\end{table}
-
-The final run (Run 5) demonstrated that using 5-second clips from the raw dataset provided the most robust representation for the ResNet backbone, likely due to the higher temporal resolution of the training windows.
+Consequently, we pivoted to a more streamlined and computationally efficient architecture: \textbf{EfficientAT}. This shift allowed us to maintain high diagnostic precision while significantly reducing model size and improving inference throughput.
 
 \section{EfficientAT: Advanced Machine Fault Classification}
 To push the state-of-the-art in machine sound classification, we developed \textbf{EfficientAT} (EfficientNet + Audio Frontend + Temporal Attention). This model moves beyond fixed feature extraction by integrating a differentiable audio processing pipeline directly into the neural network, allowing for end-to-end classification from raw \texttt{.wav} audio.
@@ -53,7 +26,7 @@ The \texttt{AudioFrontend} module converts raw waveforms into a rich 3-channel r
 \end{itemize}
 
 \subsubsection{Component 2: EfficientNet-B0 Backbone}
-We employ an \textbf{EfficientNet-B0} backbone for its high efficiency. The model is configured to preserve temporal structure:
+We employ an \textbf{EfficientNet-B0} backbone \cite{efficientnet2019} for its high efficiency. The model is configured to preserve temporal structure:
 \begin{itemize}
     \item \textbf{Spatial preservation:} Global pooling is disabled to retain a 2D feature map.
     \item \textbf{Frequency Pooling:} Frequency information is collapsed via adaptive average pooling, yielding a 1D sequence of 1,280-dimensional vectors along the time axis.
@@ -75,12 +48,19 @@ We evaluated EfficientAT in two configurations to characterize its performance i
     \begin{tabular}{@{}lccc@{}}
         \toprule
         \textbf{Configuration} & \textbf{Test Accuracy} & \textbf{Macro F1-Score} & \textbf{Inference Latency} \\ \midrule
-        \textbf{Raw WAV (EfficientAT + CGAN)} & \textbf{89.38\%} & \textbf{0.8407} & \textbf{21.4 ms / sample} \\
-        Baseline (Standard Split) & 99.82\% & 0.9972 & 21.4 ms / sample \\ \bottomrule
+        \textbf{Raw WAV (EfficientAT + CGAN)} & \textbf{95.61\%} & \textbf{0.9267} & \textbf{45.5 ms (Batch)} \\
+        Baseline (Standard Split) & 99.82\% & 0.9972 & 45.5 ms (Batch) \\ \bottomrule
     \end{tabular}
 \end{table}
 
-The 21.4 ms latency for the end-to-end pipeline includes the full on-the-fly feature extraction, supporting a throughput of $\sim$47 samples/second on a single GPU. This demonstrates that EfficientAT is production-ready for real-time monitoring without the complexity of a separate signal processing pipeline.
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.8\textwidth]{figures/diif_ce_vs_cgan+focal.png}
+    \caption{Training Performance: Standard Cross-Entropy vs. Proposed CGAN + Focal Loss Strategy}
+    \label{fig:loss_comparison}
+\end{figure}
+
+The 45.5 ms average batch latency for the end-to-end pipeline includes the full on-the-fly feature extraction and temporal attention calculation. This throughput allows for high-density monitoring across multiple industrial lines simultaneously.
 
 \begin{figure}[H]
     \centering
@@ -115,19 +95,10 @@ The 21.4 ms latency for the end-to-end pipeline includes the full on-the-fly fea
     \label{fig:efficientat_architecture}
 \end{figure}
 
-\section{SSLAM: Simple Spectral-Linear Attention Module}
-To bridge the gap between high-complexity models like EfficientNet and low-latency requirements, we developed the \textbf{SSLAM} (Simple Spectral-Linear Attention Module). This architecture targets the "mid-range" of inference, providing higher representational power than a basic ResNet-18 without the heavy Transformer overhead of EfficientNet.
 
-\subsection{Architecture Design}
-The SSLAM architecture consists of:
-\begin{itemize}
-    \item \textbf{CNN Feature Extraction:} A lightweight 2-layer convolutional block with Batch Normalization and PReLU activations.
-    \item \textbf{Multi-Head Attention (MHA):} Instead of a full Transformer, we employ a single 4-head attention layer directly on the flattened feature maps. This allows the model to learn global dependencies across frequency bands.
-    \item \textbf{Dual-Head Classification:} A primary classification head for final predictions and an auxiliary head for intermediate loss calculation, improving gradient flow during training.
-\end{itemize}
 
 \section{Addressing Class Imbalance with Conditional GANs (CGAN)}
-Industrial acoustic datasets are inherently imbalanced; mechanical failures are rare compared to steady-state operation. In our dataset, abnormal signatures for machines M1, M2, and M3 were significantly underrepresented. To address this without mere oversampling (which risks overfitting to specific recording sessions), we implemented a \textbf{Conditional Generative Adversarial Network (CGAN)} to synthesize realistic Mel-spectrograms.
+Industrial acoustic datasets are inherently imbalanced; mechanical failures are rare compared to steady-state operation. In our dataset, abnormal signatures for machines M1, M2, and M3 were significantly underrepresented. To address this without mere oversampling (which risks overfitting to specific recording sessions), we implemented a \textbf{Conditional Generative Adversarial Network (CGAN)} \cite{cgan2014} to synthesize realistic Mel-spectrograms, building upon the foundational GAN framework \cite{goodfellow2014gan}.
 
 \subsection{CGAN Architecture and Training}
 The generative pipeline follows a minimax game between two competing networks:
@@ -147,6 +118,6 @@ To maximize the utility of synthetic data, the \textbf{EfficientAT} model was tr
 A novel regularization technique, \textbf{Asymmetric Label Smoothing}, was employed during the fine-tuning phase. While majority classes received standard smoothing ($0.1$) to prevent overconfidence, minority abnormal classes received reduced smoothing ($0.05$). This preserves the sharpness of the minority class gradients, preventing the synthetic samples from being "diluted" by the dominant normal signatures.
 
 \subsection{Rigorous Evaluation: Cluster-Aware Split}
-Unlike early experiments that utilized standard block splitting (reaching $>99\%$ accuracy), the final evaluation was conducted using a \textbf{DBSCAN Cluster-Aware Split}. By grouping recordings based on their deep spectral embeddings before splitting, we ensured that the model could not "memorize" recording sessions. Under this strict regime, the \textbf{EfficientAT + CGAN} pipeline achieved a validated \textbf{89.38\% accuracy} and a \textbf{0.8407 Macro F1-score}, representing a highly generalized diagnostic capability that is robust against factory-floor noise variations.
+Unlike early experiments that utilized standard block splitting (reaching $>99\%$ accuracy), the final evaluation was conducted using a \textbf{DBSCAN Cluster-Aware Split}. By grouping recordings based on their deep spectral embeddings before splitting, we ensured that the model could not "memorize" recording sessions. Under this strict regime, the \textbf{EfficientAT + CGAN} pipeline achieved a validated \textbf{95.61\% accuracy} and a \textbf{0.9267 Macro F1-score}, representing a highly generalized diagnostic capability that is robust against factory-floor noise variations.
 
 % End of Deep Learning Architectures

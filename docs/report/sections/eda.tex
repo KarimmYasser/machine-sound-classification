@@ -40,9 +40,17 @@ By comparing the raw waveforms and Mel-spectrograms of normal and abnormal recor
 \begin{figure}[H]
     \centering
     \includegraphics[width=0.75\textwidth]{figures/eda_spectrograms.png}
-    \caption{Mel-Spectrogram Visual Signatures}
+    \caption{Mel-Spectrogram Visual Signatures: The Primary Diagnostic Tool}
     \label{fig:spectrograms}
 \end{figure}
+
+The \textbf{Mel-Spectrogram} is the primary diagnostic tool in our analysis. It serves as the "visual fingerprint" of the audio, translating mechanical oscillations into a high-dimensional spectral manifold. While waveforms (time-domain) reveal macro-level energy, the spectrogram reveals the exact frequency-domain evolution that characterizes specific fault types:
+\begin{itemize}
+    \item \textbf{Normal Operation:} Visualized as solid, rhythmic horizontal bands representing constant rotation and harmonic overtones.
+    \item \textbf{Impact Faults:} Manifest as bright vertical spikes (impulses) spanning across multiple Mel frequency bands.
+    \item \textbf{Friction and Wear:} Appear as broadband "smearing" or shifting high-frequency harmonic clouds.
+\end{itemize}
+This visual intuition is what led us to treat the classification task as a Computer Vision problem, utilizing 2D convolutional neural networks.
 
 \subsection{Normal Acoustic Signatures}
 Normal recordings are characterized by stable, periodic harmonic structures. In Machines 1 and 2, the spectrogram shows consistent horizontal bands representing the fundamental frequency and its overtones, corresponding to constant rotation speeds.
