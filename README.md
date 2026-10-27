@@ -1,6 +1,7 @@
 # Machine Listener System
 
 Machine Listener System is an audio classification project for machine fault recognition.
+
 The target task is 6-class prediction across machine ID and operating condition:
 
 - 0: Machine 1, Normal
@@ -10,7 +11,7 @@ The target task is 6-class prediction across machine ID and operating condition:
 - 4: Machine 3, Normal
 - 5: Machine 3, Abnormal
 
-This repository currently focuses on Phase 1: Exploratory Data Analysis (EDA) and visual inspection of raw audio.
+The project combines exploratory audio analysis, preprocessing, feature engineering, clustering-based data splitting, and machine learning and deep learning approaches for machine sound classification.
 
 ## Team 2
 
@@ -37,19 +38,24 @@ This repository currently focuses on Phase 1: Exploratory Data Analysis (EDA) an
 |  \- Project Findings/initial_strategy.md
 |- outputs/
 |  \- eda/
+|- scripts/
+|  |- create_unified_dataset.py
+|  |- run_training_pipeline.py
+|  |- train_01_feature_engineering.py
+|  \- train_02_model_training.py
 \- src/
-	\- visualization/
-		\- eda_baseline.py
+   \- visualization/
+      \- eda_baseline.py
 ```
 
-## Phase 1 Goal
+## Phase 1: Exploratory Data Analysis (EDA)
 
 Use side-by-side visualizations to inspect differences between normal and abnormal machine sounds before defining preprocessing and modeling.
 
 Primary visual diagnostics:
 
-- Waveform (time domain): inspect silence, clipping, and amplitude variation.
-- Mel-spectrogram (time-frequency): inspect frequency-band patterns and fault signatures.
+- **Waveform (time domain):** Inspect silence, clipping, and amplitude variation.
+- **Mel-spectrogram (time-frequency):** Inspect frequency-band patterns and fault signatures.
 
 ## Environment Setup (Conda)
 
@@ -62,7 +68,7 @@ conda activate machine-sound-eda
 
 ## Usage
 
-### 1) Interactive EDA explorer
+### 1) Interactive EDA Explorer
 
 Browse machines, state (Normal/Abnormal), graph type, and sample index in a single UI.
 
@@ -70,9 +76,9 @@ Browse machines, state (Normal/Abnormal), graph type, and sample index in a sing
 python .\src\visualization\eda_baseline.py --interactive
 ```
 
-### 2) Save baseline comparison figures
+### 2) Save Baseline Comparison Figures
 
-Generates waveform and mel-spectrogram comparison images for one machine.
+Generate waveform and mel-spectrogram comparison images for one machine.
 
 ```bash
 python .\src\visualization\eda_baseline.py --machine "Machine 1"
@@ -80,27 +86,32 @@ python .\src\visualization\eda_baseline.py --machine "Machine 1"
 
 Optional arguments:
 
-- `--data-root` dataset root directory (default: `data`)
-- `--normal-file` specific normal WAV filename/path
-- `--abnormal-file` specific abnormal WAV filename/path
-- `--sr` target sampling rate (`None` keeps original)
-- `--n-mels` mel bins (default: `128`)
-- `--hop-length` hop length (default: `512`)
-- `--out-dir` output directory (default: `outputs/eda`)
+- `--data-root`: Dataset root directory (default: `data`)
+- `--normal-file`: Specific normal WAV filename/path
+- `--abnormal-file`: Specific abnormal WAV filename/path
+- `--sr`: Target sampling rate (`None` keeps original)
+- `--n-mels`: Mel bins (default: `128`)
+- `--hop-length`: Hop length (default: `512`)
+- `--out-dir`: Output directory (default: `outputs/eda`)
 
 ### 3) Prepare Unified Dataset
 
-Before training, consolidate raw and augmented features into a single structured file to ensure lineage tracking and proper grouping:
+Before training, consolidate raw and augmented features into a single structured file to ensure lineage tracking and proper grouping.
 
 ```bash
 python .\scripts\create_unified_dataset.py
 ```
 
-This generates `data/kaggle_unified_features.csv` which contains 4 versions of every recording: `raw`, `denoised`, `added_noise`, and `time_shifted`.
+This generates `data/kaggle_unified_features.csv`, containing four versions of each recording:
 
-### 4) Run Full Training Pipeline
+- `raw`
+- `denoised`
+- `added_noise`
+- `time_shifted`
 
-To execute the complete end-to-end model training pipeline:
+### 4) Run XGBoost Training Pipeline
+
+Execute the end-to-end feature-based machine learning pipeline.
 
 ```bash
 # Run with full augmentations (default)
@@ -110,11 +121,48 @@ python .\scripts\run_training_pipeline.py
 python .\scripts\run_training_pipeline.py --no-augmentation
 ```
 
-This master script sequentially executes:
+The master script sequentially executes:
+
 1. `train_01_feature_engineering.py`: Prunes features to the top 40 and assigns clustering IDs to prevent data leakage.
-2. `train_02_model_training.py`: Splits the data securely using `GroupKFold`, fits a `StandardScaler`, and trains a GPU-accelerated `XGBClassifier`.
+2. `train_02_model_training.py`: Splits the data using `GroupKFold`, fits a `StandardScaler`, and trains a GPU-accelerated `XGBClassifier`.
 
 The best model, scaler, and label encoder are saved to the `outputs/` directory.
+
+### 5) EfficientNet-B0 Audio Classification
+
+EfficientNet-B0 is also used as a deep learning architecture for the six-class machine sound classification task.
+
+The approach uses mel-spectrogram representations of audio recordings as input to the convolutional neural network, allowing the model to learn time-frequency patterns associated with different machines and their operating conditions.
+
+The classification task covers:
+
+- Machine identification across three machines.
+- Normal and abnormal operating condition recognition.
+- Six-class prediction combining machine identity and condition.
+
+**Data Leakage Prevention**
+
+A major challenge is the high similarity between recordings, particularly samples originating from related recording sessions or produced through augmentation.
+
+Random splitting can place highly similar samples into training and evaluation sets, producing overly optimistic results.
+
+To address this:
+
+1. Apply clustering-based grouping to identify related audio samples.
+2. Assign group identifiers to recordings with similar characteristics.
+3. Use group-aware splitting, including `GroupKFold`, to keep related samples together.
+4. Evaluate model performance on separated groups to obtain a more reliable estimate of generalization.
+
+This splitting strategy is important for both the feature-based XGBoost approach and the EfficientNet-B0 approach.
+
+## Modeling Approaches
+
+| Model | Input Representation | Purpose |
+|---|---|---|
+| XGBoost | Engineered audio features | Feature-based classification baseline |
+| EfficientNet-B0 | Mel-spectrograms | Deep learning-based sound classification |
+
+Both approaches target the same six machine-condition classes.
 
 ## Documentation Index
 
@@ -133,17 +181,20 @@ By default, saved figures are written to `outputs/eda`:
 - `machine_1_waveforms.png`
 - `machine_1_melspec.png`
 
-## Notes from Current Findings
+## Key Challenges and Findings
 
-- Avoid random per-file splitting due to leakage risk from contiguous recording sessions.
-- Prefer block/chunk-based splitting to keep adjacent samples in the same split.
-- EDA should compare raw vs cleaned audio to verify preprocessing preserves diagnostic frequency content.
+- **Data leakage:** Highly similar and augmented audio recordings can leak information between training and evaluation sets.
+- **Clustering-based splitting:** Group related samples before splitting to reduce leakage and improve evaluation reliability.
+- **Audio preprocessing:** Compare raw and cleaned audio to ensure preprocessing preserves diagnostic frequency content.
+- **Feature representation:** Explore both engineered audio features and mel-spectrogram representations.
+- **Machine fault recognition:** Distinguish machine identity and normal/abnormal operating conditions within a single six-class classification task.
 
 ## Next Planned Stages
 
 - Robust preprocessing pipeline (silence trimming, denoising, normalization checks).
 - Feature pipeline refinement based on EDA evidence.
-- Model training/evaluation under course constraints.
+- Comparative evaluation of XGBoost and EfficientNet-B0 under consistent data-splitting conditions.
+- Model training and evaluation under course constraints.
 
 ## License
 
