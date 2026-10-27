@@ -16,7 +16,7 @@ This repository currently focuses on Phase 1: Exploratory Data Analysis (EDA) an
 
 - Abdallah Ayman
 - Karim Yasser
-- Mohammed Bahgat
+- Mohammad Ahmad
 - Mohammed Abd-Elaziem
 
 ## Repository Layout
